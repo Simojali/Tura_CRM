@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { MOCK_REFERENCE_DATA, getNextRefId, CITIES, TIERS } from '../lib/referenceData'
 import ReferenceItemModal from '../components/ReferenceItemModal'
 import Toast from '../components/Toast'
@@ -20,16 +20,23 @@ const CATEGORY_LABELS = {
 }
 
 export default function ReferenceData() {
+  const [searchParams] = useSearchParams()
   const [items, setItems] = useState(MOCK_REFERENCE_DATA)
-  const [activeTab, setActiveTab] = useState('all')
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'all')
   const [search, setSearch] = useState('')
   const [cityFilter, setCityFilter] = useState('')
   const [tierFilter, setTierFilter] = useState('')
   const [modalItem, setModalItem] = useState(null) // null = closed, {} = new, {id,...} = edit
   const [toast, setToast] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
-  const navigate = useNavigate()
-  const location = useLocation()
+
+  // Sync tab when sidebar link changes the URL
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    setActiveTab(tab || 'all')
+    setCityFilter('')
+    setTierFilter('')
+  }, [searchParams])
 
   // Filter items
   const filtered = useMemo(() => {
@@ -128,32 +135,14 @@ export default function ReferenceData() {
 
   return (
     <>
-      <header className="app-header">
-        <h1>Ruta Tours CRM</h1>
-        <nav className="header-nav">
-          <button
-            className={`header-nav-link ${location.pathname === '/' ? 'active' : ''}`}
-            onClick={() => navigate('/')}
-          >
-            Bookings
-          </button>
-          <button
-            className={`header-nav-link ${location.pathname === '/reference-data' ? 'active' : ''}`}
-            onClick={() => navigate('/reference-data')}
-          >
-            Reference Data
-          </button>
-        </nav>
-      </header>
+      <div className="page-header">
+        <h2>Reference Data</h2>
+        <button className="btn btn-success" onClick={() => setModalItem({})}>
+          + Add Item
+        </button>
+      </div>
 
       <div className="container">
-        {/* Page title + Add button */}
-        <div className="ref-page-header">
-          <h2>Reference Data Bank</h2>
-          <button className="btn btn-success" onClick={() => setModalItem({})}>
-            + Add Item
-          </button>
-        </div>
 
         {/* Category tabs */}
         <div className="ref-tabs">

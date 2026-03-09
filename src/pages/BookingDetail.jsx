@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { MOCK_BOOKINGS } from '../lib/mockData'
 import BookingSummaryCard from '../components/BookingSummaryCard'
@@ -36,7 +36,6 @@ const normalizeBooking = (data) => ({
 export default function BookingDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
   const [booking, setBooking] = useState(null)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
@@ -126,30 +125,19 @@ export default function BookingDetail() {
 
   return (
     <>
-      <header className="app-header">
-        <h1>Ruta Tours CRM</h1>
-        <nav className="header-nav">
-          <button
-            className={`header-nav-link ${location.pathname === '/' ? 'active' : ''}`}
-            onClick={() => navigate('/')}
-          >
-            Bookings
-          </button>
-          <button
-            className={`header-nav-link ${location.pathname === '/reference-data' ? 'active' : ''}`}
-            onClick={() => navigate('/reference-data')}
-          >
-            Reference Data
-          </button>
-        </nav>
-      </header>
+      <div className="page-header">
+        <div className="page-breadcrumb">
+          <button className="crumb-link" onClick={() => navigate('/')}>Bookings</button>
+          <span className="crumb-sep">›</span>
+          <span className="crumb-current">{booking?.client_name || '...'}</span>
+        </div>
+        <button className="btn btn-outline" onClick={() => navigate('/')}>
+          &larr; Back
+        </button>
+      </div>
 
       <div className="container">
-        <div className="detail-header">
-          <button className="btn btn-outline" onClick={() => navigate('/')}>
-            &larr; Back to Dashboard
-          </button>
-        </div>
+        <div className="detail-header"></div>
 
         {loading ? (
           <div className="loading">Loading booking...</div>

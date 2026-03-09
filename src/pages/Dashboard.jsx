@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { generateReferenciaRuta } from '../lib/constants'
 import { MOCK_BOOKINGS } from '../lib/mockData'
@@ -14,7 +14,6 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false)
   const [toast, setToast] = useState(null)
   const navigate = useNavigate()
-  const location = useLocation()
 
   const fetchBookings = useCallback(async () => {
     setLoading(true)
@@ -99,26 +98,12 @@ export default function Dashboard() {
 
   return (
     <>
-      <header className="app-header">
-        <h1>Ruta Tours CRM</h1>
-        <nav className="header-nav">
-          <button
-            className={`header-nav-link ${location.pathname === '/' ? 'active' : ''}`}
-            onClick={() => navigate('/')}
-          >
-            Bookings
-          </button>
-          <button
-            className={`header-nav-link ${location.pathname === '/reference-data' ? 'active' : ''}`}
-            onClick={() => navigate('/reference-data')}
-          >
-            Reference Data
-          </button>
-          <button className="btn btn-success" onClick={() => setShowModal(true)}>
-            + New Booking
-          </button>
-        </nav>
-      </header>
+      <div className="page-header">
+        <h2>Bookings</h2>
+        <button className="btn btn-success" onClick={() => setShowModal(true)}>
+          + New Booking
+        </button>
+      </div>
 
       <div className="container">
         {loading ? (
