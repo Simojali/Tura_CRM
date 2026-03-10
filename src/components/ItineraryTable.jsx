@@ -2,6 +2,19 @@ import { useState, useEffect } from 'react'
 import { CITIES } from '../lib/referenceData'
 import { computeDayCost } from '../lib/itineraryUtils'
 
+const TRANSFER_STATUSES = [
+  { value: 'requested',  label: 'Requested' },
+  { value: 'confirmed',  label: 'Confirmed' },
+  { value: 'done',       label: 'Done' },
+  { value: 'cancelled',  label: 'Cancelled' },
+]
+
+const HOTEL_STATUSES = [
+  { value: 'requested',  label: 'Requested' },
+  { value: 'confirmed',  label: 'Confirmed' },
+  { value: 'cancelled',  label: 'Cancelled' },
+]
+
 export default function ItineraryTable({ booking, refItems, itinerary, onSave }) {
   const [editMode, setEditMode] = useState(false)
   const [rows, setRows] = useState(itinerary)
@@ -23,8 +36,8 @@ export default function ItineraryTable({ booking, refItems, itinerary, onSave })
   }, [rows.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Reference data slices ──────────────────────────────────────────────
-  const hotels    = refItems.filter((r) => r.category === 'hotel')
-  const transfers = refItems.filter((r) => r.category === 'transfer')
+  const hotels     = refItems.filter((r) => r.category === 'hotel')
+  const transfers  = refItems.filter((r) => r.category === 'transfer')
   const activities = refItems.filter((r) => r.category === 'activity')
   const transports = refItems.filter((r) => r.category === 'transport')
 
@@ -36,11 +49,20 @@ export default function ItineraryTable({ booking, refItems, itinerary, onSave })
   const updateRow = (index, changes) =>
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...changes } : r)))
 
+  // ── Update a single transfer item field ────────────────────────────────
+  const updateTransferField = (rowIndex, transferIdx, changes) => {
+    const updated = rows[rowIndex].transfers.map((t, ti) =>
+      ti === transferIdx ? { ...t, ...changes } : t
+    )
+    updateRow(rowIndex, { transfers: updated })
+  }
+
   // ── City change (clears hotel + activities + transfers for that day) ───
   const handleCityChange = (index, city) => {
     updateRow(index, {
       city,
       hotel_id: null, hotel_name: null, hotel_tier: null, hotel_cost: 0,
+      hotel_status: 'requested', hotel_confirmation_ref: '',
       activities: [],
       transfers: [],
     })
@@ -49,7 +71,10 @@ export default function ItineraryTable({ booking, refItems, itinerary, onSave })
   // ── Hotel ──────────────────────────────────────────────────────────────
   const selectHotel = (index, hotelId) => {
     if (!hotelId) {
-      updateRow(index, { hotel_id: null, hotel_name: null, hotel_tier: null, hotel_cost: 0 })
+      updateRow(index, {
+        hotel_id: null, hotel_name: null, hotel_tier: null, hotel_cost: 0,
+        hotel_status: 'requested', hotel_confirmation_ref: '',
+      })
       return
     }
     const hotel = hotels.find((h) => h.id === hotelId)
@@ -58,7 +83,11 @@ export default function ItineraryTable({ booking, refItems, itinerary, onSave })
     const d = Number(booking.double_rooms) || 0
     const t = Number(booking.triple_rooms) || 0
     const cost = s * (hotel.price_single || 0) + d * (hotel.price_double || 0) + t * (hotel.price_triple || 0)
-    updateRow(index, { hotel_id: hotelId, hotel_name: hotel.name, hotel_tier: hotel.tier || null, hotel_cost: cost })
+    updateRow(index, {
+      hotel_id: hotelId, hotel_name: hotel.name, hotel_tier: hotel.tier || null, hotel_cost: cost,
+      hotel_status: row?.hotel_status || 'requested',
+      hotel_confirmation_ref: row?.hotel_confirmation_ref || '',
+    })
   }
 
   // ── Activities ─────────────────────────────────────────────────────────
@@ -100,6 +129,11 @@ export default function ItineraryTable({ booking, refItems, itinerary, onSave })
         type: category,
         time,
         pax_label: item.pax_label || null,
+        // Phase 2: operational fields
+        status: 'requested',
+        driver_name: '',
+        driver_phone: '',
+        notes: '',
       },
     ].sort((a, b) => a.time.localeCompare(b.time))
     updateRow(index, { transfers: updated })
@@ -172,9 +206,9 @@ export default function ItineraryTable({ booking, refItems, itinerary, onSave })
                 <div className="idc-dots">
                   {(r.hotel_id || r.activities.length > 0 || r.transfers.length > 0) && (
                     <>
-                      {r.hotel_id    && <span className="idc-dot dot-hotel" title="Hotel" />}
-                      {r.activities.length > 0 && <span className="idc-dot dot-activity" title="Activities" />}
-                      {r.transfers.length  > 0 && <span className="idc-dot dot-transfer" title="Transfers" />}
+                      {r.hotel_id               && <span className="idc-dot dot-hotel"    title="Hotel" />}
+                      {r.activities.length > 0  && <span className="idc-dot dot-activity" title="Activities" />}
+                      {r.transfers.length  > 0  && <span className="idc-dot dot-transfer" title="Transfers" />}
                     </>
                   )}
                 </div>
@@ -242,12 +276,17 @@ export default function ItineraryTable({ booking, refItems, itinerary, onSave })
                       <div className="itin-hotel-card">
                         <div className="itin-hotel-name">
                           {row.hotel_name}
-                          {editMode && (
-                            <button
-                              className="itin-remove-btn"
-                              onClick={() => selectHotel(selectedDay, '')}
-                            >×</button>
-                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span className={`itin-status-badge status-${row.hotel_status || 'requested'}`}>
+                              {HOTEL_STATUSES.find((s) => s.value === (row.hotel_status || 'requested'))?.label}
+                            </span>
+                            {editMode && (
+                              <button
+                                className="itin-remove-btn"
+                                onClick={() => selectHotel(selectedDay, '')}
+                              >×</button>
+                            )}
+                          </div>
                         </div>
                         {row.hotel_tier && <div className="itin-hotel-tier">{row.hotel_tier}</div>}
                         <div className="itin-hotel-rooms">
@@ -258,6 +297,30 @@ export default function ItineraryTable({ booking, refItems, itinerary, onSave })
                           ].filter(Boolean).join(' · ')}
                           <span className="itin-item-cost"> €{Number(row.hotel_cost).toFixed(0)}/night</span>
                         </div>
+                        {/* Hotel status + confirmation ref in edit mode */}
+                        {editMode && (
+                          <div className="itin-hotel-edit-fields">
+                            <select
+                              className="itin-field-select"
+                              value={row.hotel_status || 'requested'}
+                              onChange={(e) => updateRow(selectedDay, { hotel_status: e.target.value })}
+                            >
+                              {HOTEL_STATUSES.map((s) => (
+                                <option key={s.value} value={s.value}>{s.label}</option>
+                              ))}
+                            </select>
+                            <input
+                              className="itin-edit-input"
+                              placeholder="Confirmation ref"
+                              value={row.hotel_confirmation_ref || ''}
+                              onChange={(e) => updateRow(selectedDay, { hotel_confirmation_ref: e.target.value })}
+                            />
+                          </div>
+                        )}
+                        {/* View mode: show confirmation ref if set */}
+                        {!editMode && row.hotel_confirmation_ref && (
+                          <div className="itin-hotel-ref">Ref: {row.hotel_confirmation_ref}</div>
+                        )}
                       </div>
                     ) : !editMode ? (
                       <div className="itin-empty-section">No hotel selected</div>
@@ -338,18 +401,53 @@ export default function ItineraryTable({ booking, refItems, itinerary, onSave })
                 <div className={`itin-section-body${openSections.transfers ? ' open' : ''}`}>
                   <div className="itin-section-inner">
                     {row.transfers.map((t, ti) => (
-                      <div key={ti} className="itin-timeline-item">
-                        <span className="itin-time-badge">{t.time}</span>
-                        <div className="itin-item-info">
-                          <span className="itin-item-name">{t.name}</span>
-                          {t.pax_label && <span className="itin-item-meta">{t.pax_label}</span>}
+                      <div key={ti}>
+                        <div className="itin-timeline-item">
+                          <span className="itin-time-badge">{t.time}</span>
+                          <div className="itin-item-info">
+                            <span className="itin-item-name">{t.name}</span>
+                            {t.pax_label && <span className="itin-item-meta">{t.pax_label}</span>}
+                            {t.driver_name && (
+                              <span className="itin-item-meta">👤 {t.driver_name}</span>
+                            )}
+                          </div>
+                          <span className={`itin-status-badge status-${t.status || 'requested'}`}>
+                            {TRANSFER_STATUSES.find((s) => s.value === (t.status || 'requested'))?.label}
+                          </span>
+                          <span className={`itin-type-badge ${t.type}`}>
+                            {t.type === 'transfer' ? 'Transfer' : 'Bus'}
+                          </span>
+                          <span className="itin-item-cost">€{Number(t.cost).toFixed(0)}</span>
+                          {editMode && (
+                            <button className="itin-remove-btn" onClick={() => removeTransfer(selectedDay, ti)}>×</button>
+                          )}
                         </div>
-                        <span className={`itin-type-badge ${t.type}`}>
-                          {t.type === 'transfer' ? 'Transfer' : 'Bus'}
-                        </span>
-                        <span className="itin-item-cost">€{Number(t.cost).toFixed(0)}</span>
+
+                        {/* Compact status + driver fields in edit mode */}
                         {editMode && (
-                          <button className="itin-remove-btn" onClick={() => removeTransfer(selectedDay, ti)}>×</button>
+                          <div className="itin-transfer-edit-fields">
+                            <select
+                              className="itin-field-select"
+                              value={t.status || 'requested'}
+                              onChange={(e) => updateTransferField(selectedDay, ti, { status: e.target.value })}
+                            >
+                              {TRANSFER_STATUSES.map((s) => (
+                                <option key={s.value} value={s.value}>{s.label}</option>
+                              ))}
+                            </select>
+                            <input
+                              className="itin-edit-input"
+                              placeholder="Driver name"
+                              value={t.driver_name || ''}
+                              onChange={(e) => updateTransferField(selectedDay, ti, { driver_name: e.target.value })}
+                            />
+                            <input
+                              className="itin-edit-input"
+                              placeholder="Driver phone"
+                              value={t.driver_phone || ''}
+                              onChange={(e) => updateTransferField(selectedDay, ti, { driver_phone: e.target.value })}
+                            />
+                          </div>
                         )}
                       </div>
                     ))}

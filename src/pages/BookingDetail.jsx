@@ -8,6 +8,7 @@ import BookingSummaryCard from '../components/BookingSummaryCard'
 import BookingForm from '../components/BookingForm'
 import ItineraryTable from '../components/ItineraryTable'
 import CostCalculations from '../components/CostCalculations'
+import TransfersTab from '../components/TransfersTab'
 import Toast from '../components/Toast'
 
 const isSupabaseConfigured = !import.meta.env.VITE_SUPABASE_URL?.includes('your-project')
@@ -46,6 +47,20 @@ export default function BookingDetail() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [activeTab, setActiveTab] = useState('overview')
+
+  // ── Tab counts (derived from itinerary) ─────────────────────────────
+  const transferCount = itinerary.reduce((n, r) => n + (r.transfers?.length || 0), 0)
+  const hotelCount    = itinerary.filter((r) => r.hotel_id).length
+  const activityCount = itinerary.reduce((n, r) => n + (r.activities?.length || 0), 0)
+
+  const TABS = [
+    { key: 'overview',    label: 'Overview' },
+    { key: 'itinerary',   label: 'Itinerary' },
+    { key: 'transfers',   label: 'Transfers',  count: transferCount },
+    { key: 'hotels',      label: 'Hotels',     count: hotelCount },
+    { key: 'activities',  label: 'Activities', count: activityCount },
+  ]
 
   const fetchBooking = useCallback(async () => {
     setLoading(true)
@@ -84,11 +99,17 @@ export default function BookingDetail() {
     fetchBooking()
   }, [fetchBooking])
 
+  // ── Shared itinerary save handler (used by both ItineraryTable and TransfersTab) ──
+  const handleItinerarySave = (rows) => {
+    setItinerary(rows)
+    saveItinerary(id, rows)
+    setToast({ message: 'Itinerary saved', type: 'success' })
+  }
+
   const handleSave = async (formData) => {
     if (!isSupabaseConfigured) {
       const b = normalizeBooking({ ...booking, ...formData })
       setBooking(b)
-      // Re-init itinerary if n_dias or check_in changed and no saved itinerary exists
       const saved = loadItinerary(id)
       if (!saved) setItinerary(initItinerary(b))
       setShowEditModal(false)
@@ -162,26 +183,61 @@ export default function BookingDetail() {
           <div className="loading">Booking not found.</div>
         ) : (
           <>
-            {/* ── Summary Card ── */}
+            {/* ── Summary Card (always visible) ── */}
             <BookingSummaryCard
               booking={booking}
               onEdit={() => setShowEditModal(true)}
             />
 
-            {/* ── Day-by-Day Itinerary ── */}
-            <ItineraryTable
-              booking={booking}
-              refItems={MOCK_REFERENCE_DATA}
-              itinerary={itinerary}
-              onSave={(rows) => {
-                setItinerary(rows)
-                saveItinerary(id, rows)
-                setToast({ message: 'Itinerary saved', type: 'success' })
-              }}
-            />
+            {/* ── Tab Bar ── */}
+            <div className="bd-tabs">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  className={`bd-tab${activeTab === t.key ? ' active' : ''}`}
+                  onClick={() => setActiveTab(t.key)}
+                >
+                  {t.label}
+                  {t.count > 0 && (
+                    <span className="bd-tab-count">{t.count}</span>
+                  )}
+                </button>
+              ))}
+            </div>
 
-            {/* ── Cost Analysis ── */}
-            <CostCalculations booking={booking} itinerary={itinerary} />
+            {/* ── Tab Content ── */}
+            {activeTab === 'overview' && (
+              <CostCalculations booking={booking} itinerary={itinerary} />
+            )}
+
+            {activeTab === 'itinerary' && (
+              <ItineraryTable
+                booking={booking}
+                refItems={MOCK_REFERENCE_DATA}
+                itinerary={itinerary}
+                onSave={handleItinerarySave}
+              />
+            )}
+
+            {activeTab === 'transfers' && (
+              <TransfersTab
+                booking={booking}
+                itinerary={itinerary}
+                onSave={handleItinerarySave}
+              />
+            )}
+
+            {activeTab === 'hotels' && (
+              <div className="bd-tab-placeholder">
+                Hotels view — coming soon
+              </div>
+            )}
+
+            {activeTab === 'activities' && (
+              <div className="bd-tab-placeholder">
+                Activities view — coming soon
+              </div>
+            )}
           </>
         )}
       </div>

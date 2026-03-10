@@ -1533,6 +1533,452 @@ tbody tr:hover {
   font-style: italic;
 }
 
+/* ── Itinerary: status badge (shared with TransfersTab) ── */
+.itin-status-badge {
+  display: inline-block;
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-requested { background: #f3f4f6; color: #6b7280; }
+.status-confirmed { background: #d4ede1; color: #0f3d25; }
+.status-done      { background: #0f3d25; color: #ffffff; }
+.status-cancelled { background: #fee2e2; color: #dc2626; text-decoration: line-through; }
+
+/* ── Itinerary: inline edit fields (Phase 2) ── */
+.itin-transfer-edit-fields,
+.itin-hotel-edit-fields {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0 0.5rem 2.5rem; /* indent under time badge */
+  border-bottom: 1px dashed var(--color-border);
+  margin-bottom: 0.25rem;
+}
+
+.itin-edit-input {
+  padding: 0.28rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  min-width: 110px;
+  flex: 1;
+}
+
+.itin-edit-input:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 2px rgba(34, 135, 79, 0.15);
+}
+
+.itin-hotel-ref {
+  font-size: 0.73rem;
+  color: var(--color-text-light);
+  margin-top: 0.2rem;
+}
+
+/* ── Booking Detail: Tab Bar ── */
+.bd-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-border);
+  background: var(--color-card);
+  padding: 0 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
+
+.bd-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  background: none;
+  color: var(--color-text-light);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.bd-tab:hover {
+  color: var(--color-text);
+}
+
+.bd-tab.active {
+  color: var(--color-primary);
+  font-weight: 700;
+  border-bottom-color: var(--color-primary);
+}
+
+.bd-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: #e8f5ee;
+  color: var(--color-primary-dark);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  min-width: 18px;
+}
+
+.bd-tab.active .bd-tab-count {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.bd-tab-placeholder {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--color-text-light);
+  font-style: italic;
+  font-size: 0.875rem;
+  background: var(--color-card);
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ── Transfers Tab ── */
+.transfers-tab {
+  background: var(--color-card);
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.transfers-tab-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.transfers-tab-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.transfers-tab-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.transfers-tab-count {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+}
+
+.transfers-filter-bar {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.transfers-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--color-text-light);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.transfers-filter-btn:hover {
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.transfers-filter-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+  font-weight: 700;
+}
+
+.tf-filter-count {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+}
+
+.transfers-filter-btn.active .tf-filter-count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.transfers-list {
+  /* rows container */
+}
+
+.transfers-list-header {
+  display: grid;
+  grid-template-columns: 130px 1fr 140px 110px 60px 40px;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-light);
+}
+
+.transfers-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 140px 110px 60px 40px;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
+  transition: background 0.12s;
+}
+
+.transfers-row:last-child {
+  border-bottom: none;
+}
+
+.transfers-row:hover {
+  background: #f5f9f6;
+}
+
+.transfers-row.cancelled {
+  opacity: 0.55;
+}
+
+.tr-datetime {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.tr-date {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tr-time {
+  font-size: 0.72rem;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tr-city {
+  font-size: 0.68rem;
+  color: var(--color-text-light);
+}
+
+.tr-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.tr-name {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tr-meta {
+  font-size: 0.7rem;
+  color: var(--color-text-light);
+}
+
+.tr-driver {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+
+.tr-driver-name {
+  font-size: 0.78rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.tr-driver-phone {
+  font-size: 0.7rem;
+  color: var(--color-text-light);
+}
+
+.tr-driver-empty {
+  color: var(--color-text-light);
+  font-size: 0.8rem;
+}
+
+.tr-status {
+  /* contains itin-status-badge */
+}
+
+.tr-cost {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-align: right;
+}
+
+.tr-actions {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.tr-menu-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--color-text-light);
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius);
+  transition: background 0.12s, color 0.12s;
+}
+
+.tr-menu-btn:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.tr-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  min-width: 160px;
+  overflow: hidden;
+}
+
+.tr-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 1rem;
+  border: none;
+  background: none;
+  font-size: 0.8rem;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.tr-menu-item:hover {
+  background: #f5f9f6;
+}
+
+.tr-menu-item.danger {
+  color: #dc2626;
+}
+
+.tr-menu-item.danger:hover {
+  background: #fee2e2;
+}
+
+/* Inline edit form */
+.tr-inline-edit {
+  padding: 0.75rem 1.25rem 1rem;
+  background: #f5f9f6;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tr-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.tr-edit-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-text-light);
+  margin-bottom: 0.25rem;
+}
+
+.tr-edit-input {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  box-sizing: border-box;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.tr-edit-input:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 2px rgba(34, 135, 79, 0.15);
+}
+
+.tr-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Notes row below a transfer */
+.tr-notes-row {
+  padding: 0.3rem 1.25rem 0.4rem 1.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  background: #fbfdfb;
+  border-bottom: 1px solid var(--color-border);
+  font-style: italic;
+}
+
+.transfers-empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--color-text-light);
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
 /* ── Cost Calculations Panel ── */
 .cost-panel {
   background: var(--color-card);
