@@ -64,6 +64,18 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
     setOpenMenuIdx(null)
   }
 
+  const deleteTransfer = (dayIndex, transferIndex) => {
+    const updated = itinerary.map((row, ri) => {
+      if (ri !== dayIndex) return row
+      return {
+        ...row,
+        transfers: row.transfers.filter((_, ti) => ti !== transferIndex),
+      }
+    })
+    onSave(updated)
+    setOpenMenuIdx(null)
+  }
+
   // ── Inline edit ───────────────────────────────────────────────────────
   const startEdit = (item, idx) => {
     setEditForm({
@@ -231,6 +243,12 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
                           ↺ Restore
                         </button>
                       )}
+                      <button
+                        className="tr-menu-item danger"
+                        onClick={() => deleteTransfer(item.dayIndex, item.transferIndex)}
+                      >
+                        🗑️ Delete
+                      </button>
                     </div>
                   )}
                 </div>

@@ -9,6 +9,8 @@ import BookingForm from '../components/BookingForm'
 import ItineraryTable from '../components/ItineraryTable'
 import CostCalculations from '../components/CostCalculations'
 import TransfersTab from '../components/TransfersTab'
+import HotelsTab from '../components/HotelsTab'
+import ActivitiesTab from '../components/ActivitiesTab'
 import Toast from '../components/Toast'
 
 const isSupabaseConfigured = !import.meta.env.VITE_SUPABASE_URL?.includes('your-project')
@@ -228,15 +230,18 @@ export default function BookingDetail() {
             )}
 
             {activeTab === 'hotels' && (
-              <div className="bd-tab-placeholder">
-                Hotels view — coming soon
-              </div>
+              <HotelsTab
+                booking={booking}
+                itinerary={itinerary}
+                onSave={handleItinerarySave}
+              />
             )}
 
             {activeTab === 'activities' && (
-              <div className="bd-tab-placeholder">
-                Activities view — coming soon
-              </div>
+              <ActivitiesTab
+                itinerary={itinerary}
+                onSave={handleItinerarySave}
+              />
             )}
           </>
         )}
