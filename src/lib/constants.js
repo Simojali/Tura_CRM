@@ -27,6 +27,14 @@ export const HOTEL_TYPES = [
 
 export const RESERV_STATUSES = ['Confirmed', 'Pending', 'Passed']
 
+export const CLIENT_TYPES = [
+  { value: 'direct',    label: 'Direct (B2C)',        markup: 35 },
+  { value: 'agency',    label: 'Travel Agency (B2B)', markup: 25 },
+  { value: 'wholesale', label: 'Wholesale / DMC',      markup: 15 },
+  { value: 'corporate', label: 'Group / Corporate',    markup: 20 },
+  { value: 'other',     label: 'Other',                markup: 10 },
+]
+
 const MONTH_ABBR = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',

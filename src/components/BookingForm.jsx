@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { PROVEEDORES, HOTEL_TYPES, RESERV_STATUSES } from '../lib/constants'
+import { PROVEEDORES, HOTEL_TYPES, RESERV_STATUSES, CLIENT_TYPES } from '../lib/constants'
 
 const EMPTY_FORM = {
   proveedor: '',
   referencia_agencia: '',
+  client_type: '',
   client_name: '',
   telefono: '',
   check_in: '',
@@ -74,6 +75,17 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
             value={form.referencia_agencia}
             onChange={handleChange}
           />
+        </div>
+
+        {/* Client Type */}
+        <div className="form-group">
+          <label>Client Type</label>
+          <select name="client_type" value={form.client_type} onChange={handleChange}>
+            <option value="">-- Select --</option>
+            {CLIENT_TYPES.map((ct) => (
+              <option key={ct.value} value={ct.value}>{ct.label}</option>
+            ))}
+          </select>
         </div>
 
         {/* Route Reference (only shown on detail page, read-only) */}

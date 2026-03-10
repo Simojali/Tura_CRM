@@ -2,8 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { MOCK_BOOKINGS } from '../lib/mockData'
+import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
+import { loadItinerary, saveItinerary, initItinerary } from '../lib/itineraryUtils'
 import BookingSummaryCard from '../components/BookingSummaryCard'
 import BookingForm from '../components/BookingForm'
+import ItineraryTable from '../components/ItineraryTable'
+import CostCalculations from '../components/CostCalculations'
 import Toast from '../components/Toast'
 
 const isSupabaseConfigured = !import.meta.env.VITE_SUPABASE_URL?.includes('your-project')
@@ -22,6 +26,7 @@ const normalizeBooking = (data) => ({
   n_dias: data.n_dias ?? '',
   number_of_guests: data.number_of_guests ?? '',
   proveedor: data.proveedor || '',
+  client_type: data.client_type || '',
   referencia_agencia: data.referencia_agencia || '',
   telefono: data.telefono || '',
   flight_number: data.flight_number || '',
@@ -37,6 +42,7 @@ export default function BookingDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [booking, setBooking] = useState(null)
+  const [itinerary, setItinerary] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -46,7 +52,12 @@ export default function BookingDetail() {
 
     if (!isSupabaseConfigured) {
       const found = MOCK_BOOKINGS.find((b) => b.id === id)
-      setBooking(found ? normalizeBooking(found) : null)
+      const b = found ? normalizeBooking(found) : null
+      setBooking(b)
+      if (b) {
+        const saved = loadItinerary(id)
+        setItinerary(saved || initItinerary(b))
+      }
       setLoading(false)
       return
     }
@@ -61,7 +72,10 @@ export default function BookingDetail() {
       console.error('Error fetching booking:', error)
       setToast({ message: 'Error loading booking', type: 'error' })
     } else {
-      setBooking(normalizeBooking(data))
+      const b = normalizeBooking(data)
+      setBooking(b)
+      const saved = loadItinerary(id)
+      setItinerary(saved || initItinerary(b))
     }
     setLoading(false)
   }, [id])
@@ -72,7 +86,11 @@ export default function BookingDetail() {
 
   const handleSave = async (formData) => {
     if (!isSupabaseConfigured) {
-      setBooking(normalizeBooking({ ...booking, ...formData }))
+      const b = normalizeBooking({ ...booking, ...formData })
+      setBooking(b)
+      // Re-init itinerary if n_dias or check_in changed and no saved itinerary exists
+      const saved = loadItinerary(id)
+      if (!saved) setItinerary(initItinerary(b))
       setShowEditModal(false)
       setToast({ message: 'Booking updated successfully', type: 'success' })
       return
@@ -80,6 +98,7 @@ export default function BookingDetail() {
 
     const payload = {
       proveedor: formData.proveedor || null,
+      client_type: formData.client_type || null,
       referencia_agencia: formData.referencia_agencia || null,
       client_name: formData.client_name,
       telefono: formData.telefono || null,
@@ -137,20 +156,34 @@ export default function BookingDetail() {
       </div>
 
       <div className="container">
-        <div className="detail-header"></div>
-
         {loading ? (
           <div className="loading">Loading booking...</div>
         ) : !booking ? (
           <div className="loading">Booking not found.</div>
         ) : (
-          <BookingSummaryCard
-            booking={booking}
-            onEdit={() => setShowEditModal(true)}
-          />
-        )}
+          <>
+            {/* ── Summary Card ── */}
+            <BookingSummaryCard
+              booking={booking}
+              onEdit={() => setShowEditModal(true)}
+            />
 
-        {/* Itinerary section will go here */}
+            {/* ── Day-by-Day Itinerary ── */}
+            <ItineraryTable
+              booking={booking}
+              refItems={MOCK_REFERENCE_DATA}
+              itinerary={itinerary}
+              onSave={(rows) => {
+                setItinerary(rows)
+                saveItinerary(id, rows)
+                setToast({ message: 'Itinerary saved', type: 'success' })
+              }}
+            />
+
+            {/* ── Cost Analysis ── */}
+            <CostCalculations booking={booking} itinerary={itinerary} />
+          </>
+        )}
       </div>
 
       {/* Edit Modal */}
