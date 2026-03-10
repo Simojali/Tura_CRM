@@ -23,14 +23,10 @@ export function initItinerary(booking) {
       city: '',
       hotel_id: null,
       hotel_name: null,
+      hotel_tier: null,
       hotel_cost: 0,
-      upsells: [],           // [{ id, name, cost, price_unit }]
-      transfer_id: null,
-      transfer_name: null,
-      transfer_cost: 0,
-      transport_id: null,
-      transport_name: null,
-      transport_cost: 0,
+      activities: [],   // [{ id, name, cost, price_unit, time }]
+      transfers: [],    // [{ id, name, cost, type: 'transfer'|'transport', time, pax_label }]
     })
   }
 
@@ -54,38 +50,35 @@ export function saveItinerary(bookingId, rows) {
 
 /**
  * Compute the total cost for a single itinerary row.
- * hotel_cost + all upsell costs + transfer_cost + transport_cost
+ * hotel_cost + all activity costs + all transfer costs
  */
 export function computeDayCost(row) {
   const hotel = Number(row.hotel_cost) || 0
-  const upsells = (row.upsells || []).reduce((sum, u) => sum + (Number(u.cost) || 0), 0)
-  const transfer = Number(row.transfer_cost) || 0
-  const transport = Number(row.transport_cost) || 0
-  return hotel + upsells + transfer + transport
+  const activities = (row.activities || []).reduce((sum, a) => sum + (Number(a.cost) || 0), 0)
+  const transfers = (row.transfers || []).reduce((sum, t) => sum + (Number(t.cost) || 0), 0)
+  return hotel + activities + transfers
 }
 
 /**
  * Aggregate totals across all rows.
- * Returns { hotelTotal, upsellTotal, transferTotal, transportTotal, grandTotal, costPerPerson }
+ * Returns { hotelTotal, activityTotal, transferTotal, grandTotal, costPerPerson }
  */
 export function computeTotals(rows, booking) {
   let hotelTotal = 0
-  let upsellTotal = 0
+  let activityTotal = 0
   let transferTotal = 0
-  let transportTotal = 0
 
   rows.forEach((row) => {
     hotelTotal += Number(row.hotel_cost) || 0
-    upsellTotal += (row.upsells || []).reduce((sum, u) => sum + (Number(u.cost) || 0), 0)
-    transferTotal += Number(row.transfer_cost) || 0
-    transportTotal += Number(row.transport_cost) || 0
+    activityTotal += (row.activities || []).reduce((sum, a) => sum + (Number(a.cost) || 0), 0)
+    transferTotal += (row.transfers || []).reduce((sum, t) => sum + (Number(t.cost) || 0), 0)
   })
 
-  const grandTotal = hotelTotal + upsellTotal + transferTotal + transportTotal
+  const grandTotal = hotelTotal + activityTotal + transferTotal
   const guests = Math.max(Number(booking.number_of_guests) || 1, 1)
   const costPerPerson = grandTotal / guests
 
-  return { hotelTotal, upsellTotal, transferTotal, transportTotal, grandTotal, costPerPerson }
+  return { hotelTotal, activityTotal, transferTotal, grandTotal, costPerPerson }
 }
 
 /**

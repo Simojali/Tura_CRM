@@ -1078,144 +1078,459 @@ tbody tr:hover {
   font-style: italic;
 }
 
-.itinerary-table-wrapper {
-  overflow-x: auto;
+/* ── Itinerary Timeline Layout ── */
+.itinerary-layout {
+  display: flex;
+  min-height: 420px;
 }
 
-/* Itinerary table — inherits global table styles but with overrides */
-.itinerary-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-  table-layout: auto;
-}
-
-.itinerary-table thead {
+/* Left: Day List */
+.itinerary-day-list {
+  width: 156px;
+  flex-shrink: 0;
   background: var(--color-primary-dark);
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+  overflow-y: auto;
+}
+
+.itinerary-day-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.6rem 0.9rem;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  text-align: left;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.itinerary-day-card:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: var(--color-white);
 }
 
-.itinerary-table th {
-  padding: 0.625rem 0.75rem;
-  text-align: left;
-  font-weight: 600;
-  white-space: nowrap;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+.itinerary-day-card.active {
+  background: rgba(232, 160, 32, 0.18);
+  color: var(--color-white);
+  border-left-color: #e8a020;
 }
 
-.itinerary-table td {
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
-}
-
-.itinerary-table tbody tr:hover {
-  background: #edf5ee;
-}
-
-.itin-date {
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--color-text-light);
-  font-size: 0.8rem;
-}
-
-.day-label {
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--color-primary);
-  font-size: 0.8rem;
-}
-
-.day-cost {
+.idc-day {
+  font-size: 0.82rem;
   font-weight: 700;
+  line-height: 1.1;
+}
+
+.idc-date {
+  font-size: 0.72rem;
+  opacity: 0.75;
+  line-height: 1.1;
+}
+
+.idc-city {
+  font-size: 0.68rem;
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+  line-height: 1.2;
+  margin-top: 0.05rem;
+}
+
+.idc-dots {
+  display: flex;
+  gap: 4px;
+  margin-top: 0.25rem;
+}
+
+.idc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-hotel    { background: #4ade80; }
+.dot-activity { background: #fbbf24; }
+.dot-transfer { background: #60a5fa; }
+
+/* Right: Day Detail */
+.itinerary-day-detail {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.itin-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.itin-detail-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.itin-detail-date {
+  font-weight: 700;
+  font-size: 0.92rem;
   color: var(--color-text);
   white-space: nowrap;
-  text-align: right;
-  padding-right: 1rem;
 }
 
-.itin-empty {
-  color: var(--color-text-light);
-  opacity: 0.5;
-}
-
-.itin-cost {
-  font-size: 0.75rem;
+.itin-detail-city {
+  font-size: 0.85rem;
   color: var(--color-primary);
   font-weight: 600;
 }
 
-/* Compact selects inside the itinerary table */
-.itin-select {
-  padding: 0.3rem 0.45rem;
+.itin-detail-city.muted {
+  color: var(--color-text-light);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.itin-city-select {
+  padding: 0.3rem 0.5rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-white);
   color: var(--color-text);
-  font-size: 0.78rem;
-  min-width: 120px;
-  max-width: 160px;
+  font-size: 0.82rem;
   cursor: pointer;
 }
 
-.itin-select:focus {
+.itin-city-select:focus {
   outline: none;
   border-color: var(--color-primary-light);
   box-shadow: 0 0 0 2px rgba(34, 135, 79, 0.15);
 }
 
-.itin-select:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* Upsell chips */
-.upsell-edit {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.upsell-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-}
-
-.upsell-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: #d4ede1;
+.itin-day-cost-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--color-primary-dark);
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.15rem 0.45rem;
+  background: #d4ede1;
+  padding: 0.25rem 0.75rem;
   border-radius: 999px;
   white-space: nowrap;
 }
 
-.upsell-chip.view {
-  background: #e8f5ee;
+/* Collapsible sections */
+.itin-section {
+  border-bottom: 1px solid var(--color-border);
 }
 
-.upsell-chip-remove {
+.itin-section:last-child {
+  border-bottom: none;
+}
+
+.itin-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.7rem 1.25rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.itin-section-header:hover {
+  background: #f5f9f6;
+}
+
+.itin-section-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.itin-section-title {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.itin-section-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: #e8f5ee;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  min-width: 20px;
+  text-align: center;
+}
+
+.itin-section-chevron {
+  font-size: 1.1rem;
+  color: var(--color-text-light);
+  transition: transform 0.2s;
+  display: inline-block;
+  line-height: 1;
+}
+
+.itin-section-chevron.open {
+  transform: rotate(90deg);
+}
+
+.itin-section-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+}
+
+.itin-section-body.open {
+  grid-template-rows: 1fr;
+}
+
+.itin-section-inner {
+  overflow: hidden;
+  padding: 0 1.25rem;
+}
+
+.itin-section-body.open .itin-section-inner {
+  padding: 0.5rem 1.25rem 0.75rem;
+}
+
+.itin-empty-section {
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  font-style: italic;
+  padding: 0.35rem 0;
+}
+
+/* Hotel card */
+.itin-hotel-card {
+  background: #f5f9f6;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.itin-hotel-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.itin-hotel-tier {
+  font-size: 0.72rem;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-top: 0.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.itin-hotel-rooms {
+  font-size: 0.78rem;
+  color: var(--color-text-light);
+  margin-top: 0.2rem;
+}
+
+/* Timeline items (activities + transfers) */
+.itin-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.itin-timeline-item:last-child {
+  border-bottom: none;
+}
+
+.itin-time-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  background: #d4ede1;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.itin-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.itin-item-name {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itin-item-meta {
+  font-size: 0.7rem;
+  color: var(--color-text-light);
+}
+
+.itin-item-cost {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.itin-type-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.itin-type-badge.transfer {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.itin-type-badge.transport {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.itin-remove-btn {
   background: none;
   border: none;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   line-height: 1;
-  color: var(--color-primary-dark);
+  color: var(--color-text-light);
   cursor: pointer;
-  padding: 0;
-  opacity: 0.6;
+  padding: 0 0.1rem;
+  opacity: 0.55;
+  flex-shrink: 0;
 }
 
-.upsell-chip-remove:hover {
+.itin-remove-btn:hover {
   opacity: 1;
+  color: #dc2626;
+}
+
+/* Add item row in edit mode */
+.itin-add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0 0.25rem;
+  border-top: 1px dashed var(--color-border);
+  margin-top: 0.25rem;
+}
+
+.itin-add-row:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.itin-time-input {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 0.78rem;
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.itin-time-input:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 2px rgba(34, 135, 79, 0.15);
+}
+
+.itin-field-select {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 0.78rem;
+  flex: 1;
+  min-width: 140px;
+  cursor: pointer;
+}
+
+.itin-field-select:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 2px rgba(34, 135, 79, 0.15);
+}
+
+.itin-field-select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.itin-add-btn {
+  padding: 0.3rem 0.7rem;
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.itin-add-btn:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.itin-add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.itin-hint {
+  font-size: 0.72rem;
+  color: var(--color-text-light);
+  font-style: italic;
 }
 
 /* ── Cost Calculations Panel ── */

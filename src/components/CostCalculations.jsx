@@ -41,16 +41,12 @@ export default function CostCalculations({ booking, itinerary }) {
             <span>{fmt(totals.hotelTotal)}</span>
           </div>
           <div className="cost-row">
-            <span>Activities / Upsells</span>
-            <span>{fmt(totals.upsellTotal)}</span>
+            <span>Activities</span>
+            <span>{fmt(totals.activityTotal)}</span>
           </div>
           <div className="cost-row">
-            <span>Transfers</span>
+            <span>Transfers & Transport</span>
             <span>{fmt(totals.transferTotal)}</span>
-          </div>
-          <div className="cost-row">
-            <span>Transport</span>
-            <span>{fmt(totals.transportTotal)}</span>
           </div>
 
           <div className="cost-divider" />
