@@ -57,11 +57,46 @@ export default function BookingDetail() {
   const activityCount = itinerary.reduce((n, r) => n + (r.activities?.length || 0), 0)
 
   const TABS = [
-    { key: 'overview',    label: 'Overview' },
-    { key: 'itinerary',   label: 'Itinerary' },
-    { key: 'transfers',   label: 'Transfers',  count: transferCount },
-    { key: 'hotels',      label: 'Hotels',     count: hotelCount },
-    { key: 'activities',  label: 'Activities', count: activityCount },
+    {
+      key: 'overview', label: 'Overview',
+      icon: (
+        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'itinerary', label: 'Itinerary',
+      icon: (
+        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'transfers', label: 'Transfers', count: transferCount,
+      icon: (
+        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 17H3a2 2 0 01-2-2v-4l3-6h14l3 6v4a2 2 0 01-2 2h-2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'hotels', label: 'Hotels', count: hotelCount,
+      icon: (
+        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 21h18M9 21V9m6 12V9M3 9l9-6 9 6"/><rect x="9" y="13" width="6" height="4" rx="0.5"/>
+        </svg>
+      ),
+    },
+    {
+      key: 'activities', label: 'Activities', count: activityCount,
+      icon: (
+        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      ),
+    },
   ]
 
   const fetchBooking = useCallback(async () => {
@@ -199,6 +234,7 @@ export default function BookingDetail() {
                   className={`bd-tab${activeTab === t.key ? ' active' : ''}`}
                   onClick={() => setActiveTab(t.key)}
                 >
+                  {t.icon}
                   {t.label}
                   {t.count > 0 && (
                     <span className="bd-tab-count">{t.count}</span>

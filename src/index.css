@@ -1611,42 +1611,45 @@ tbody tr:hover {
 
 /* ── Booking Detail: Tab Bar ── */
 .bd-tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--color-border);
-  background: var(--color-card);
-  padding: 0 1.25rem;
+  display: inline-flex;
+  gap: 0.2rem;
+  background: #eaecee;
+  padding: 0.28rem;
   margin-top: 1.25rem;
-  border-radius: var(--radius) var(--radius) 0 0;
-  box-shadow: var(--shadow);
+  border-radius: 12px;
   overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
 }
+.bd-tabs::-webkit-scrollbar { display: none; }
 
 .bd-tab {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.75rem 1rem;
+  padding: 0.45rem 0.9rem;
   border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  background: none;
+  border-radius: 9px;
+  background: transparent;
   color: var(--color-text-light);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
 }
 
 .bd-tab:hover {
+  background: rgba(255, 255, 255, 0.55);
   color: var(--color-text);
 }
 
 .bd-tab.active {
-  color: var(--color-primary);
-  font-weight: 700;
-  border-bottom-color: var(--color-primary);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.07);
 }
 
 .bd-tab-count {
@@ -1655,16 +1658,17 @@ tbody tr:hover {
   justify-content: center;
   font-size: 0.68rem;
   font-weight: 700;
-  background: #e8f5ee;
-  color: var(--color-primary-dark);
+  background: rgba(0, 0, 0, 0.09);
+  color: var(--color-text-light);
   border-radius: 999px;
-  padding: 0.1rem 0.45rem;
+  padding: 0.1rem 0.42rem;
   min-width: 18px;
+  transition: background 0.15s, color 0.15s;
 }
 
 .bd-tab.active .bd-tab-count {
   background: var(--color-primary);
-  color: var(--color-white);
+  color: #fff;
 }
 
 .bd-tab-placeholder {
