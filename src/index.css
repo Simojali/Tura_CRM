@@ -2391,6 +2391,42 @@ tbody tr:hover {
   padding-bottom: 0.05rem;
 }
 
+/* ── Trip Overview ── */
+.to-day-cards { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+
+.to-day-card {
+  background: var(--color-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.to-day-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  gap: 1rem; flex-wrap: wrap;
+}
+
+.to-day-header-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.to-day-label { font-weight: 700; font-size: 0.92rem; color: var(--color-primary-dark); }
+.to-day-date { font-size: 0.85rem; color: var(--color-text); font-weight: 500; }
+
+.to-hotel-section { padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--color-border); }
+.to-hotel-ref { font-size: 0.8rem; color: var(--color-text-light); font-family: monospace; margin-top: 0.25rem; }
+.to-timeline-section { padding: 0.5rem 1.25rem 0.75rem; }
+
+.to-kind-icon { font-size: 0.85rem; flex-shrink: 0; width: 20px; text-align: center; }
+
+.to-empty {
+  text-align: center; padding: 3rem 1.5rem;
+  background: var(--color-card); border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  margin-top: 1rem;
+  color: var(--color-text-light); font-style: italic; font-size: 0.875rem;
+}
+
 /* ── Cost Calculations Panel ── */
 .cost-panel {
   background: var(--color-card);

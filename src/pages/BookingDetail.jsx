@@ -2,12 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { MOCK_BOOKINGS } from '../lib/mockData'
-import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
 import { loadItinerary, saveItinerary, initItinerary } from '../lib/itineraryUtils'
 import BookingSummaryCard from '../components/BookingSummaryCard'
 import BookingForm from '../components/BookingForm'
-import ItineraryTable from '../components/ItineraryTable'
-import CostCalculations from '../components/CostCalculations'
+import TripOverview from '../components/TripOverview'
 import TransfersTab from '../components/TransfersTab'
 import HotelsTab from '../components/HotelsTab'
 import ActivitiesTab from '../components/ActivitiesTab'
@@ -62,14 +60,6 @@ export default function BookingDetail() {
       icon: (
         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
           <rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/>
-        </svg>
-      ),
-    },
-    {
-      key: 'itinerary', label: 'Itinerary',
-      icon: (
-        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
         </svg>
       ),
     },
@@ -136,7 +126,7 @@ export default function BookingDetail() {
     fetchBooking()
   }, [fetchBooking])
 
-  // ── Shared itinerary save handler (used by both ItineraryTable and TransfersTab) ──
+  // ── Shared itinerary save handler ──
   const handleItinerarySave = (rows) => {
     setItinerary(rows)
     saveItinerary(id, rows)
@@ -245,13 +235,8 @@ export default function BookingDetail() {
 
             {/* ── Tab Content ── */}
             {activeTab === 'overview' && (
-              <CostCalculations booking={booking} itinerary={itinerary} />
-            )}
-
-            {activeTab === 'itinerary' && (
-              <ItineraryTable
+              <TripOverview
                 booking={booking}
-                refItems={MOCK_REFERENCE_DATA}
                 itinerary={itinerary}
                 onSave={handleItinerarySave}
               />
