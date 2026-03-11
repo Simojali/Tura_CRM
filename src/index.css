@@ -2093,7 +2093,7 @@ tbody tr:hover {
 .hotels-list-header,
 .hotels-row {
   display: grid;
-  grid-template-columns: 160px 90px 1fr 120px 110px 130px 70px 40px;
+  grid-template-columns: 110px 85px 1fr 150px 110px 110px 120px 65px 40px;
   align-items: center;
   gap: 0.75rem;
   padding: 0.65rem 1.25rem;
@@ -2116,6 +2116,9 @@ tbody tr:hover {
 .hotels-row:last-child { border-bottom: none; }
 .hotels-row.cancelled { opacity: 0.55; }
 
+/* Day & Date cell */
+.ht-day { display: block; font-size: 0.8rem; color: var(--color-text-light); }
+
 /* Check-in / Check-out cell */
 .ht-dates { display: flex; flex-direction: column; gap: 0.1rem; }
 .ht-checkin-out {
@@ -2124,7 +2127,6 @@ tbody tr:hover {
   color: var(--color-text);
   white-space: nowrap;
 }
-.ht-day-label { font-size: 0.72rem; color: var(--color-text-light); }
 
 .ht-hotel { display: flex; flex-direction: column; gap: 0.2rem; }
 .ht-hotel-name { font-weight: 500; font-size: 0.875rem; }

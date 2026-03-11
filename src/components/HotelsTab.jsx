@@ -357,9 +357,10 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
         <div className="hotels-list">
           {/* Column headers */}
           <div className="hotels-list-header">
-            <span className="ht-col-dates">Check-in / Out</span>
+            <span className="ht-col-datetime">Day & Date</span>
             <span className="ht-col-city">City</span>
             <span className="ht-col-hotel">Hotel</span>
+            <span className="ht-col-dates">Check-in / Out</span>
             <span className="ht-col-rooms">Rooms</span>
             <span className="ht-col-status">Status</span>
             <span className="ht-col-ref">Ref</span>
@@ -374,12 +375,9 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
               <div key={idx}>
                 {/* Main row */}
                 <div className={`hotels-row${item.hotel_status === 'cancelled' ? ' cancelled' : ''}`}>
-                  {/* Check-in / Check-out */}
-                  <div className="ht-dates">
-                    <span className="ht-checkin-out">
-                      {fmtDate(checkin)} → {fmtDate(checkout)}
-                    </span>
-                    <span className="ht-day-label">Day {item.day}</span>
+                  {/* Day & Date */}
+                  <div className="ht-datetime">
+                    <span className="ht-day">Day {item.day} · {fmtDate(item.date)}</span>
                   </div>
 
                   {/* City */}
@@ -391,6 +389,13 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
                     {item.hotel_tier && (
                       <span className="ht-tier-badge">{item.hotel_tier}</span>
                     )}
+                  </div>
+
+                  {/* Check-in / Check-out */}
+                  <div className="ht-dates">
+                    <span className="ht-checkin-out">
+                      {fmtDate(checkin)} → {fmtDate(checkout)}
+                    </span>
                   </div>
 
                   {/* Rooms */}
