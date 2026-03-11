@@ -19,16 +19,19 @@ const STATUS_LABELS = {
   cancelled: 'Cancelled',
 }
 
+const EMPTY_ADD_FORM = {
+  dayIdx: '', transferId: '', time: '09:00',
+  status: 'requested', driverName: '', driverPhone: '',
+  fromLocation: '', toLocation: '',
+}
+
 export default function TransfersTab({ booking, itinerary, onSave }) {
   const [filterStatus, setFilterStatus] = useState('all')
   const [openMenuIdx, setOpenMenuIdx] = useState(null)
   const [editingIdx, setEditingIdx] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [showAddForm, setShowAddForm] = useState(false)
-  const [addForm, setAddForm] = useState({
-    dayIdx: '', transferId: '', time: '09:00',
-    status: 'requested', driverName: '', driverPhone: '',
-  })
+  const [addForm, setAddForm] = useState(EMPTY_ADD_FORM)
 
   // Close ⋮ menu when clicking anywhere outside
   useEffect(() => {
@@ -60,7 +63,7 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
       return {
         ...row,
         transfers: row.transfers.map((t, ti) =>
-          ti === transferIndex ? { ...t, ...changes } : t
+          ti !== transferIndex ? t : { ...t, ...changes }
         ),
       }
     })
@@ -87,7 +90,7 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
 
   // ── Add transfer / transport ──────────────────────────────────────────
   const addTransferItem = () => {
-    const { dayIdx, transferId, time, status, driverName, driverPhone } = addForm
+    const { dayIdx, transferId, time, status, driverName, driverPhone, fromLocation, toLocation } = addForm
     if (dayIdx === '' || !transferId) return
     const [category, refId] = transferId.split(':')
     const pool = category === 'transfer' ? refTransfers : refTransports
@@ -107,13 +110,15 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
           status,
           driver_name: driverName,
           driver_phone: driverPhone,
+          from_location: fromLocation,
+          to_location: toLocation,
           notes: '',
         }].sort((a, b) => a.time.localeCompare(b.time)),
       }
     })
     onSave(updated)
     setShowAddForm(false)
-    setAddForm({ dayIdx: '', transferId: '', time: '09:00', status: 'requested', driverName: '', driverPhone: '' })
+    setAddForm(EMPTY_ADD_FORM)
   }
 
   // ── Inline edit ───────────────────────────────────────────────────────
@@ -121,6 +126,8 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
     setEditForm({
       time: item.time || '',
       status: item.status || 'requested',
+      from_location: item.from_location || '',
+      to_location: item.to_location || '',
       driver_name: item.driver_name || '',
       driver_phone: item.driver_phone || '',
       notes: item.notes || '',
@@ -250,6 +257,28 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
               </select>
             </div>
 
+            {/* Route: From */}
+            <div className="tab-add-field">
+              <label>From (Pickup)</label>
+              <input
+                className="tr-edit-input"
+                placeholder="e.g. Marrakech Airport"
+                value={addForm.fromLocation}
+                onChange={(e) => setAddForm((f) => ({ ...f, fromLocation: e.target.value }))}
+              />
+            </div>
+
+            {/* Route: To */}
+            <div className="tab-add-field">
+              <label>To (Dropoff)</label>
+              <input
+                className="tr-edit-input"
+                placeholder="e.g. Hotel Kenzi Menara"
+                value={addForm.toLocation}
+                onChange={(e) => setAddForm((f) => ({ ...f, toLocation: e.target.value }))}
+              />
+            </div>
+
             {/* Status */}
             <div className="tab-add-field">
               <label>Status</label>
@@ -294,7 +323,7 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
               >Save</button>
               <button className="btn btn-outline" onClick={() => {
                 setShowAddForm(false)
-                setAddForm({ dayIdx: '', transferId: '', time: '09:00', status: 'requested', driverName: '', driverPhone: '' })
+                setAddForm(EMPTY_ADD_FORM)
               }}>Cancel</button>
             </div>
           </div>
@@ -333,9 +362,14 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
                   {item.city && <span className="tr-city">{item.city}</span>}
                 </div>
 
-                {/* Name & type */}
+                {/* Name, route & type */}
                 <div className="tr-info">
                   <span className="tr-name">{item.name}</span>
+                  {(item.from_location || item.to_location) && (
+                    <span className="tr-route">
+                      {item.from_location || '?'} → {item.to_location || '?'}
+                    </span>
+                  )}
                   <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     {item.pax_label && <span className="tr-meta">{item.pax_label}</span>}
                     <span className={`itin-type-badge ${item.type}`}>
@@ -442,6 +476,24 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
                           <option key={s.value} value={s.value}>{s.label}</option>
                         ))}
                       </select>
+                    </div>
+                    <div>
+                      <label className="tr-edit-label">From (Pickup)</label>
+                      <input
+                        className="tr-edit-input"
+                        placeholder="e.g. Marrakech Airport"
+                        value={editForm.from_location}
+                        onChange={(e) => setEditForm((f) => ({ ...f, from_location: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="tr-edit-label">To (Dropoff)</label>
+                      <input
+                        className="tr-edit-input"
+                        placeholder="e.g. Hotel Kenzi Menara"
+                        value={editForm.to_location}
+                        onChange={(e) => setEditForm((f) => ({ ...f, to_location: e.target.value }))}
+                      />
                     </div>
                     <div>
                       <label className="tr-edit-label">Driver name</label>
