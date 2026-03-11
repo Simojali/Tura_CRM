@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react'
+import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
+
+const refTransfers = MOCK_REFERENCE_DATA.filter((r) => r.category === 'transfer')
+const refTransports = MOCK_REFERENCE_DATA.filter((r) => r.category === 'transport')
 
 const STATUSES = [
   { value: 'all',        label: 'All' },
@@ -20,6 +24,11 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
   const [openMenuIdx, setOpenMenuIdx] = useState(null)
   const [editingIdx, setEditingIdx] = useState(null)
   const [editForm, setEditForm] = useState({})
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addForm, setAddForm] = useState({
+    dayIdx: '', transferId: '', time: '09:00',
+    status: 'requested', driverName: '', driverPhone: '',
+  })
 
   // Close ⋮ menu when clicking anywhere outside
   useEffect(() => {
@@ -76,6 +85,37 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
     setOpenMenuIdx(null)
   }
 
+  // ── Add transfer / transport ──────────────────────────────────────────
+  const addTransferItem = () => {
+    const { dayIdx, transferId, time, status, driverName, driverPhone } = addForm
+    if (dayIdx === '' || !transferId) return
+    const [category, refId] = transferId.split(':')
+    const pool = category === 'transfer' ? refTransfers : refTransports
+    const item = pool.find((r) => r.id === refId)
+    if (!item) return
+    const updated = itinerary.map((row, ri) => {
+      if (ri !== Number(dayIdx)) return row
+      return {
+        ...row,
+        transfers: [...(row.transfers || []), {
+          id: refId,
+          name: item.name,
+          cost: item.price || 0,
+          type: category,
+          time,
+          pax_label: item.pax_label || null,
+          status,
+          driver_name: driverName,
+          driver_phone: driverPhone,
+          notes: '',
+        }].sort((a, b) => a.time.localeCompare(b.time)),
+      }
+    })
+    onSave(updated)
+    setShowAddForm(false)
+    setAddForm({ dayIdx: '', transferId: '', time: '09:00', status: 'requested', driverName: '', driverPhone: '' })
+  }
+
   // ── Inline edit ───────────────────────────────────────────────────────
   const startEdit = (item, idx) => {
     setEditForm({
@@ -117,6 +157,13 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
         <div className="transfers-tab-title-row">
           <h3 className="transfers-tab-title">All Transfers & Transport</h3>
           <span className="transfers-tab-count">{allTransfers.length} total</span>
+          <button
+            className="btn btn-primary"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => { setShowAddForm(true); setEditingIdx(null) }}
+          >
+            + Add Transfer
+          </button>
         </div>
 
         {/* Filter buttons */}
@@ -137,10 +184,127 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
         </div>
       </div>
 
+      {/* ── Add form ── */}
+      {showAddForm && (() => {
+        const selDay = addForm.dayIdx !== '' ? itinerary[Number(addForm.dayIdx)] : null
+        const selCity = selDay?.city || ''
+        const cityTransfers = selCity ? refTransfers.filter((r) => r.city === selCity) : []
+        return (
+          <div className="tab-add-form">
+            <div className="tab-add-form-title">Add Transfer / Transport to Day</div>
+
+            {/* Day */}
+            <div className="tab-add-field">
+              <label>Day</label>
+              <select
+                className="tr-edit-input"
+                value={addForm.dayIdx}
+                onChange={(e) => setAddForm((f) => ({ ...f, dayIdx: e.target.value, transferId: '' }))}
+              >
+                <option value="">— Select day —</option>
+                {itinerary.map((row, i) => (
+                  <option key={i} value={i}>
+                    Day {row.day} · {fmtDate(row.date)}{row.city ? ` · ${row.city}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Time */}
+            <div className="tab-add-field">
+              <label>Time</label>
+              <input
+                type="time"
+                className="tr-edit-input"
+                value={addForm.time}
+                onChange={(e) => setAddForm((f) => ({ ...f, time: e.target.value }))}
+              />
+            </div>
+
+            {/* Transfer / Transport picker */}
+            <div className="tab-add-field wide">
+              <label>Transfer / Transport</label>
+              <select
+                className="tr-edit-input"
+                value={addForm.transferId}
+                disabled={addForm.dayIdx === ''}
+                onChange={(e) => setAddForm((f) => ({ ...f, transferId: e.target.value }))}
+              >
+                <option value="">— Select transfer or transport —</option>
+                {cityTransfers.length > 0 && (
+                  <optgroup label={`Transfers — ${selCity}`}>
+                    {cityTransfers.map((r) => (
+                      <option key={`transfer:${r.id}`} value={`transfer:${r.id}`}>
+                        {r.name}{r.pax_label ? ` (${r.pax_label})` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="Transport (all routes)">
+                  {refTransports.map((r) => (
+                    <option key={`transport:${r.id}`} value={`transport:${r.id}`}>
+                      {r.name}{r.pax_label ? ` (${r.pax_label})` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
+            {/* Status */}
+            <div className="tab-add-field">
+              <label>Status</label>
+              <select
+                className="tr-edit-input"
+                value={addForm.status}
+                onChange={(e) => setAddForm((f) => ({ ...f, status: e.target.value }))}
+              >
+                {STATUSES.filter((s) => s.value !== 'all').map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Driver Name */}
+            <div className="tab-add-field">
+              <label>Driver Name</label>
+              <input
+                className="tr-edit-input"
+                placeholder="Optional"
+                value={addForm.driverName}
+                onChange={(e) => setAddForm((f) => ({ ...f, driverName: e.target.value }))}
+              />
+            </div>
+
+            {/* Driver Phone */}
+            <div className="tab-add-field">
+              <label>Driver Phone</label>
+              <input
+                className="tr-edit-input"
+                placeholder="+212 6xx xxx xxx"
+                value={addForm.driverPhone}
+                onChange={(e) => setAddForm((f) => ({ ...f, driverPhone: e.target.value }))}
+              />
+            </div>
+
+            <div className="tab-add-actions">
+              <button
+                className="btn btn-success"
+                disabled={addForm.dayIdx === '' || !addForm.transferId}
+                onClick={addTransferItem}
+              >Save</button>
+              <button className="btn btn-outline" onClick={() => {
+                setShowAddForm(false)
+                setAddForm({ dayIdx: '', transferId: '', time: '09:00', status: 'requested', driverName: '', driverPhone: '' })
+              }}>Cancel</button>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── Empty state ── */}
       {allTransfers.length === 0 ? (
         <div className="transfers-empty">
-          No transfers yet. Add transfers in the Itinerary tab.
+          No transfers yet. Click <strong>+ Add Transfer</strong> above to add transfers to any day.
         </div>
       ) : filtered.length === 0 ? (
         <div className="transfers-empty">

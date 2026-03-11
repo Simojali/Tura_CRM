@@ -239,6 +239,7 @@ export default function BookingDetail() {
 
             {activeTab === 'activities' && (
               <ActivitiesTab
+                booking={booking}
                 itinerary={itinerary}
                 onSave={handleItinerarySave}
               />

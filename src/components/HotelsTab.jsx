@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
+import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
 
 const HOTEL_STATUSES = [
-  { value: 'all',        label: 'All' },
-  { value: 'requested',  label: 'Requested' },
-  { value: 'confirmed',  label: 'Confirmed' },
-  { value: 'cancelled',  label: 'Cancelled' },
+  { value: 'all',       label: 'All' },
+  { value: 'requested', label: 'Requested' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'cancelled', label: 'Cancelled' },
 ]
 
 const STATUS_LABELS = {
@@ -13,11 +14,22 @@ const STATUS_LABELS = {
   cancelled: 'Cancelled',
 }
 
+const hotels = MOCK_REFERENCE_DATA.filter((r) => r.category === 'hotel')
+
+// Group hotels by city for <optgroup> display
+const hotelsByCity = hotels.reduce((acc, h) => {
+  if (!acc[h.city]) acc[h.city] = []
+  acc[h.city].push(h)
+  return acc
+}, {})
+
 export default function HotelsTab({ booking, itinerary, onSave }) {
   const [filterStatus, setFilterStatus] = useState('all')
   const [openMenuIdx, setOpenMenuIdx] = useState(null)
   const [editingIdx, setEditingIdx] = useState(null)
   const [editForm, setEditForm] = useState({})
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addForm, setAddForm] = useState({ dayIdx: '', hotelId: '', status: 'requested', confirmRef: '' })
 
   // Close ⋮ menu on outside click
   useEffect(() => {
@@ -25,6 +37,13 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
     document.addEventListener('click', close)
     return () => document.removeEventListener('click', close)
   }, [])
+
+  // ── Room counts + cost calculation ────────────────────────────────────
+  const s = Number(booking.single_rooms) || 0
+  const d = Number(booking.double_rooms) || 0
+  const t = Number(booking.triple_rooms) || 0
+  const calcHotelCost = (hotel) =>
+    s * (hotel.price_single || 0) + d * (hotel.price_double || 0) + t * (hotel.price_triple || 0)
 
   // ── Flat list: days that have a hotel ─────────────────────────────────
   const hotelRows = itinerary
@@ -35,12 +54,40 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
     ? hotelRows
     : hotelRows.filter((row) => (row.hotel_status || 'requested') === filterStatus)
 
+  // Days without a hotel (for Add form day picker)
+  const availableDays = itinerary
+    .map((row, i) => ({ i, row }))
+    .filter(({ row }) => !row.hotel_id)
+
   // ── Update a hotel row ────────────────────────────────────────────────
   const updateHotel = (rowIndex, changes) => {
     const updated = itinerary.map((row, ri) =>
       ri === rowIndex ? { ...row, ...changes } : row
     )
     onSave(updated)
+  }
+
+  // ── Add hotel ─────────────────────────────────────────────────────────
+  const addHotel = () => {
+    const { dayIdx, hotelId, status, confirmRef } = addForm
+    if (dayIdx === '' || !hotelId) return
+    const hotel = hotels.find((h) => h.id === hotelId)
+    if (!hotel) return
+    const cost = calcHotelCost(hotel)
+    const updated = itinerary.map((row, ri) =>
+      ri !== Number(dayIdx) ? row : {
+        ...row,
+        hotel_id: hotelId,
+        hotel_name: hotel.name,
+        hotel_tier: hotel.tier || null,
+        hotel_cost: cost,
+        hotel_status: status,
+        hotel_confirmation_ref: confirmRef,
+      }
+    )
+    onSave(updated)
+    setShowAddForm(false)
+    setAddForm({ dayIdx: '', hotelId: '', status: 'requested', confirmRef: '' })
   }
 
   // ── Quick actions ──────────────────────────────────────────────────────
@@ -61,6 +108,7 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   // ── Inline edit ───────────────────────────────────────────────────────
   const startEdit = (item, idx) => {
     setEditForm({
+      hotelId: item.hotel_id || '',
       hotel_status: item.hotel_status || 'requested',
       hotel_confirmation_ref: item.hotel_confirmation_ref || '',
     })
@@ -69,7 +117,21 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   }
 
   const saveEdit = (item) => {
-    updateHotel(item.rowIndex, editForm)
+    const hotel = hotels.find((h) => h.id === editForm.hotelId)
+    const changes = {
+      hotel_status: editForm.hotel_status,
+      hotel_confirmation_ref: editForm.hotel_confirmation_ref,
+    }
+    if (hotel && editForm.hotelId !== item.hotel_id) {
+      const cost = calcHotelCost(hotel)
+      Object.assign(changes, {
+        hotel_id: hotel.id,
+        hotel_name: hotel.name,
+        hotel_tier: hotel.tier || null,
+        hotel_cost: cost,
+      })
+    }
+    updateHotel(item.rowIndex, changes)
     setEditingIdx(null)
   }
 
@@ -78,8 +140,8 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   // ── Helpers ───────────────────────────────────────────────────────────
   const fmtDate = (dateStr) => {
     if (!dateStr) return ''
-    const [y, m, d] = dateStr.split('-').map(Number)
-    return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+    const [y, m, day] = dateStr.split('-').map(Number)
+    return new Date(y, m - 1, day).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
   }
 
   const countByStatus = (status) =>
@@ -93,13 +155,48 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
     return parts.join(' · ') || '—'
   }
 
+  // Hotel options for add / edit forms
+  const selectedDayForAdd = addForm.dayIdx !== '' ? itinerary[Number(addForm.dayIdx)] : null
+  const addFormCity = selectedDayForAdd?.city || ''
+
+  const renderHotelOptions = (filterCity) => {
+    if (filterCity) {
+      return hotels
+        .filter((h) => h.city === filterCity)
+        .map((h) => (
+          <option key={h.id} value={h.id}>
+            {h.name} · {h.tier} (€{h.price_double}/night)
+          </option>
+        ))
+    }
+    // No city — show all grouped
+    return Object.entries(hotelsByCity).map(([city, cityHotels]) => (
+      <optgroup key={city} label={city}>
+        {cityHotels.map((h) => (
+          <option key={h.id} value={h.id}>
+            {h.name} · {h.tier} (€{h.price_double}/night)
+          </option>
+        ))}
+      </optgroup>
+    ))
+  }
+
   return (
     <div className="hotels-tab">
+
       {/* ── Header ── */}
       <div className="hotels-tab-header">
         <div className="hotels-tab-title-row">
           <h3 className="hotels-tab-title">All Hotels</h3>
           <span className="hotels-tab-count">{hotelRows.length} total</span>
+          <button
+            className="btn btn-primary"
+            style={{ marginLeft: 'auto' }}
+            disabled={availableDays.length === 0}
+            onClick={() => { setShowAddForm(true); setEditingIdx(null) }}
+          >
+            + Add Hotel
+          </button>
         </div>
         <div className="hotels-filter-bar">
           {HOTEL_STATUSES.map((s) => {
@@ -118,10 +215,87 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
         </div>
       </div>
 
+      {/* ── Add form ── */}
+      {showAddForm && (
+        <div className="tab-add-form">
+          <div className="tab-add-form-title">Add Hotel to Day</div>
+
+          {/* Day */}
+          <div className="tab-add-field">
+            <label>Day</label>
+            <select
+              className="tr-edit-input"
+              value={addForm.dayIdx}
+              onChange={(e) => setAddForm((f) => ({ ...f, dayIdx: e.target.value, hotelId: '' }))}
+            >
+              <option value="">— Select day —</option>
+              {availableDays.map(({ i, row }) => (
+                <option key={i} value={i}>
+                  Day {row.day} · {fmtDate(row.date)}{row.city ? ` · ${row.city}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Hotel */}
+          <div className="tab-add-field wide">
+            <label>Hotel</label>
+            <select
+              className="tr-edit-input"
+              value={addForm.hotelId}
+              disabled={addForm.dayIdx === ''}
+              onChange={(e) => setAddForm((f) => ({ ...f, hotelId: e.target.value }))}
+            >
+              <option value="">— Select hotel —</option>
+              {renderHotelOptions(addFormCity)}
+            </select>
+          </div>
+
+          {/* Status */}
+          <div className="tab-add-field">
+            <label>Status</label>
+            <select
+              className="tr-edit-input"
+              value={addForm.status}
+              onChange={(e) => setAddForm((f) => ({ ...f, status: e.target.value }))}
+            >
+              {HOTEL_STATUSES.filter((s) => s.value !== 'all').map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Confirmation Ref (only if confirmed) */}
+          {addForm.status === 'confirmed' && (
+            <div className="tab-add-field">
+              <label>Confirmation Ref</label>
+              <input
+                className="tr-edit-input"
+                placeholder="Supplier confirmation number"
+                value={addForm.confirmRef}
+                onChange={(e) => setAddForm((f) => ({ ...f, confirmRef: e.target.value }))}
+              />
+            </div>
+          )}
+
+          <div className="tab-add-actions">
+            <button
+              className="btn btn-success"
+              disabled={addForm.dayIdx === '' || !addForm.hotelId}
+              onClick={addHotel}
+            >Save</button>
+            <button className="btn btn-outline" onClick={() => {
+              setShowAddForm(false)
+              setAddForm({ dayIdx: '', hotelId: '', status: 'requested', confirmRef: '' })
+            }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
       {/* ── Empty state ── */}
       {hotelRows.length === 0 ? (
         <div className="hotels-empty">
-          No hotels yet. Add hotels in the Itinerary tab.
+          No hotels yet. Click <strong>+ Add Hotel</strong> above to assign a hotel to a day.
         </div>
       ) : filtered.length === 0 ? (
         <div className="hotels-empty">No {filterStatus} hotels.</div>
@@ -227,6 +401,26 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
               {editingIdx === idx && (
                 <div className="ht-inline-edit">
                   <div className="tr-edit-grid">
+                    {/* Hotel picker */}
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label className="tr-edit-label">Hotel</label>
+                      <select
+                        className="tr-edit-input"
+                        value={editForm.hotelId}
+                        onChange={(e) => setEditForm((f) => ({ ...f, hotelId: e.target.value }))}
+                      >
+                        <option value="">— Keep current hotel —</option>
+                        {Object.entries(hotelsByCity).map(([city, cityHotels]) => (
+                          <optgroup key={city} label={city}>
+                            {cityHotels.map((h) => (
+                              <option key={h.id} value={h.id}>
+                                {h.name} · {h.tier} (€{h.price_double}/night)
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className="tr-edit-label">Status</label>
                       <select
