@@ -23,13 +23,15 @@ const hotelsByCity = hotels.reduce((acc, h) => {
   return acc
 }, {})
 
+const EMPTY_ADD_FORM = { dayIdx: '', hotelId: '', status: 'requested', confirmRef: '', checkin: '', checkout: '' }
+
 export default function HotelsTab({ booking, itinerary, onSave }) {
   const [filterStatus, setFilterStatus] = useState('all')
   const [openMenuIdx, setOpenMenuIdx] = useState(null)
   const [editingIdx, setEditingIdx] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [showAddForm, setShowAddForm] = useState(false)
-  const [addForm, setAddForm] = useState({ dayIdx: '', hotelId: '', status: 'requested', confirmRef: '' })
+  const [addForm, setAddForm] = useState(EMPTY_ADD_FORM)
 
   // Close ⋮ menu on outside click
   useEffect(() => {
@@ -44,6 +46,24 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   const t = Number(booking.triple_rooms) || 0
   const calcHotelCost = (hotel) =>
     s * (hotel.price_single || 0) + d * (hotel.price_double || 0) + t * (hotel.price_triple || 0)
+
+  // ── Auto-compute checkout: next day in itinerary, or +1 day ──────────
+  const getAutoCheckout = (rowIndex) => {
+    if (rowIndex + 1 < itinerary.length) return itinerary[rowIndex + 1].date
+    const dateStr = itinerary[rowIndex]?.date
+    if (!dateStr) return ''
+    const [y, m, dy] = dateStr.split('-').map(Number)
+    const next = new Date(y, m - 1, dy + 1)
+    return [
+      next.getFullYear(),
+      String(next.getMonth() + 1).padStart(2, '0'),
+      String(next.getDate()).padStart(2, '0'),
+    ].join('-')
+  }
+
+  // ── Resolved checkin/checkout for display (stored or auto-computed) ───
+  const resolveCheckin  = (item) => item.hotel_checkin  || item.date || ''
+  const resolveCheckout = (item) => item.hotel_checkout || getAutoCheckout(item.rowIndex)
 
   // ── Flat list: days that have a hotel ─────────────────────────────────
   const hotelRows = itinerary
@@ -69,7 +89,7 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
 
   // ── Add hotel ─────────────────────────────────────────────────────────
   const addHotel = () => {
-    const { dayIdx, hotelId, status, confirmRef } = addForm
+    const { dayIdx, hotelId, status, confirmRef, checkin, checkout } = addForm
     if (dayIdx === '' || !hotelId) return
     const hotel = hotels.find((h) => h.id === hotelId)
     if (!hotel) return
@@ -83,11 +103,13 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
         hotel_cost: cost,
         hotel_status: status,
         hotel_confirmation_ref: confirmRef,
+        hotel_checkin: checkin,
+        hotel_checkout: checkout,
       }
     )
     onSave(updated)
     setShowAddForm(false)
-    setAddForm({ dayIdx: '', hotelId: '', status: 'requested', confirmRef: '' })
+    setAddForm(EMPTY_ADD_FORM)
   }
 
   // ── Quick actions ──────────────────────────────────────────────────────
@@ -100,6 +122,7 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
     updateHotel(item.rowIndex, {
       hotel_id: null, hotel_name: null, hotel_tier: null, hotel_cost: 0,
       hotel_status: undefined, hotel_confirmation_ref: '',
+      hotel_checkin: '', hotel_checkout: '',
     })
     setOpenMenuIdx(null)
     if (editingIdx !== null) setEditingIdx(null)
@@ -111,6 +134,8 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
       hotelId: item.hotel_id || '',
       hotel_status: item.hotel_status || 'requested',
       hotel_confirmation_ref: item.hotel_confirmation_ref || '',
+      hotel_checkin: resolveCheckin(item),
+      hotel_checkout: resolveCheckout(item),
     })
     setEditingIdx(idx)
     setOpenMenuIdx(null)
@@ -121,6 +146,8 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
     const changes = {
       hotel_status: editForm.hotel_status,
       hotel_confirmation_ref: editForm.hotel_confirmation_ref,
+      hotel_checkin: editForm.hotel_checkin,
+      hotel_checkout: editForm.hotel_checkout,
     }
     if (hotel && editForm.hotelId !== item.hotel_id) {
       const cost = calcHotelCost(hotel)
@@ -226,7 +253,12 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
             <select
               className="tr-edit-input"
               value={addForm.dayIdx}
-              onChange={(e) => setAddForm((f) => ({ ...f, dayIdx: e.target.value, hotelId: '' }))}
+              onChange={(e) => {
+                const idx = e.target.value
+                const checkin  = idx !== '' ? (itinerary[Number(idx)]?.date || '') : ''
+                const checkout = idx !== '' ? getAutoCheckout(Number(idx)) : ''
+                setAddForm((f) => ({ ...f, dayIdx: idx, hotelId: '', checkin, checkout }))
+              }}
             >
               <option value="">— Select day —</option>
               {availableDays.map(({ i, row }) => (
@@ -235,6 +267,28 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Check-in */}
+          <div className="tab-add-field">
+            <label>Check-in</label>
+            <input
+              type="date"
+              className="tr-edit-input"
+              value={addForm.checkin}
+              onChange={(e) => setAddForm((f) => ({ ...f, checkin: e.target.value }))}
+            />
+          </div>
+
+          {/* Check-out */}
+          <div className="tab-add-field">
+            <label>Check-out</label>
+            <input
+              type="date"
+              className="tr-edit-input"
+              value={addForm.checkout}
+              onChange={(e) => setAddForm((f) => ({ ...f, checkout: e.target.value }))}
+            />
           </div>
 
           {/* Hotel */}
@@ -286,7 +340,7 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
             >Save</button>
             <button className="btn btn-outline" onClick={() => {
               setShowAddForm(false)
-              setAddForm({ dayIdx: '', hotelId: '', status: 'requested', confirmRef: '' })
+              setAddForm(EMPTY_ADD_FORM)
             }}>Cancel</button>
           </div>
         </div>
@@ -303,7 +357,7 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
         <div className="hotels-list">
           {/* Column headers */}
           <div className="hotels-list-header">
-            <span className="ht-col-datetime">Day & Date</span>
+            <span className="ht-col-dates">Check-in / Out</span>
             <span className="ht-col-city">City</span>
             <span className="ht-col-hotel">Hotel</span>
             <span className="ht-col-rooms">Rooms</span>
@@ -313,144 +367,173 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
             <span className="ht-col-menu" />
           </div>
 
-          {filtered.map((item, idx) => (
-            <div key={idx}>
-              {/* Main row */}
-              <div className={`hotels-row${item.hotel_status === 'cancelled' ? ' cancelled' : ''}`}>
-                {/* Day & Date */}
-                <div className="ht-datetime">
-                  <span className="ht-day">Day {item.day} · {fmtDate(item.date)}</span>
+          {filtered.map((item, idx) => {
+            const checkin  = resolveCheckin(item)
+            const checkout = resolveCheckout(item)
+            return (
+              <div key={idx}>
+                {/* Main row */}
+                <div className={`hotels-row${item.hotel_status === 'cancelled' ? ' cancelled' : ''}`}>
+                  {/* Check-in / Check-out */}
+                  <div className="ht-dates">
+                    <span className="ht-checkin-out">
+                      {fmtDate(checkin)} → {fmtDate(checkout)}
+                    </span>
+                    <span className="ht-day-label">Day {item.day}</span>
+                  </div>
+
+                  {/* City */}
+                  <div className="ht-city">{item.city || '—'}</div>
+
+                  {/* Hotel name + tier */}
+                  <div className="ht-hotel">
+                    <span className="ht-hotel-name">{item.hotel_name}</span>
+                    {item.hotel_tier && (
+                      <span className="ht-tier-badge">{item.hotel_tier}</span>
+                    )}
+                  </div>
+
+                  {/* Rooms */}
+                  <div className="ht-rooms">{roomSummary()}</div>
+
+                  {/* Status */}
+                  <div className="ht-status">
+                    <span className={`itin-status-badge status-${item.hotel_status || 'requested'}`}>
+                      {STATUS_LABELS[item.hotel_status || 'requested']}
+                    </span>
+                  </div>
+
+                  {/* Confirmation ref */}
+                  <div className="ht-ref">
+                    {item.hotel_confirmation_ref
+                      ? <span className="ht-ref-value">{item.hotel_confirmation_ref}</span>
+                      : <span className="ht-ref-empty">—</span>}
+                  </div>
+
+                  {/* Cost */}
+                  <div className="ht-cost">€{Number(item.hotel_cost).toFixed(0)}</div>
+
+                  {/* ⋮ Menu */}
+                  <div className="ht-actions">
+                    <button
+                      className="ht-menu-btn"
+                      title="Actions"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setOpenMenuIdx(openMenuIdx === idx ? null : idx)
+                      }}
+                    >⋮</button>
+
+                    {openMenuIdx === idx && (
+                      <div className="ht-menu" onClick={(e) => e.stopPropagation()}>
+                        {item.hotel_status !== 'confirmed' && (
+                          <button className="ht-menu-item" onClick={() => markStatus(item, 'confirmed')}>
+                            ✅ Mark Confirmed
+                          </button>
+                        )}
+                        <button className="ht-menu-item" onClick={() => startEdit(item, idx)}>
+                          ✏️ Edit
+                        </button>
+                        {item.hotel_status === 'confirmed' && (
+                          <button className="ht-menu-item" onClick={() => markStatus(item, 'requested')}>
+                            ↺ Reset to Requested
+                          </button>
+                        )}
+                        {item.hotel_status !== 'cancelled' && (
+                          <button className="ht-menu-item danger" onClick={() => markStatus(item, 'cancelled')}>
+                            ✕ Cancel
+                          </button>
+                        )}
+                        {item.hotel_status === 'cancelled' && (
+                          <button className="ht-menu-item" onClick={() => markStatus(item, 'requested')}>
+                            ↺ Restore
+                          </button>
+                        )}
+                        <button className="ht-menu-item danger" onClick={() => deleteHotel(item)}>
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* City */}
-                <div className="ht-city">{item.city || '—'}</div>
-
-                {/* Hotel name + tier */}
-                <div className="ht-hotel">
-                  <span className="ht-hotel-name">{item.hotel_name}</span>
-                  {item.hotel_tier && (
-                    <span className="ht-tier-badge">{item.hotel_tier}</span>
-                  )}
-                </div>
-
-                {/* Rooms */}
-                <div className="ht-rooms">{roomSummary()}</div>
-
-                {/* Status */}
-                <div className="ht-status">
-                  <span className={`itin-status-badge status-${item.hotel_status || 'requested'}`}>
-                    {STATUS_LABELS[item.hotel_status || 'requested']}
-                  </span>
-                </div>
-
-                {/* Confirmation ref */}
-                <div className="ht-ref">
-                  {item.hotel_confirmation_ref
-                    ? <span className="ht-ref-value">{item.hotel_confirmation_ref}</span>
-                    : <span className="ht-ref-empty">—</span>}
-                </div>
-
-                {/* Cost */}
-                <div className="ht-cost">€{Number(item.hotel_cost).toFixed(0)}</div>
-
-                {/* ⋮ Menu */}
-                <div className="ht-actions">
-                  <button
-                    className="ht-menu-btn"
-                    title="Actions"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setOpenMenuIdx(openMenuIdx === idx ? null : idx)
-                    }}
-                  >⋮</button>
-
-                  {openMenuIdx === idx && (
-                    <div className="ht-menu" onClick={(e) => e.stopPropagation()}>
-                      {item.hotel_status !== 'confirmed' && (
-                        <button className="ht-menu-item" onClick={() => markStatus(item, 'confirmed')}>
-                          ✅ Mark Confirmed
-                        </button>
-                      )}
-                      <button className="ht-menu-item" onClick={() => startEdit(item, idx)}>
-                        ✏️ Edit
-                      </button>
-                      {item.hotel_status === 'confirmed' && (
-                        <button className="ht-menu-item" onClick={() => markStatus(item, 'requested')}>
-                          ↺ Reset to Requested
-                        </button>
-                      )}
-                      {item.hotel_status !== 'cancelled' && (
-                        <button className="ht-menu-item danger" onClick={() => markStatus(item, 'cancelled')}>
-                          ✕ Cancel
-                        </button>
-                      )}
-                      {item.hotel_status === 'cancelled' && (
-                        <button className="ht-menu-item" onClick={() => markStatus(item, 'requested')}>
-                          ↺ Restore
-                        </button>
-                      )}
-                      <button className="ht-menu-item danger" onClick={() => deleteHotel(item)}>
-                        🗑️ Delete
-                      </button>
+                {/* Inline edit form */}
+                {editingIdx === idx && (
+                  <div className="ht-inline-edit">
+                    <div className="tr-edit-grid">
+                      {/* Hotel picker */}
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label className="tr-edit-label">Hotel</label>
+                        <select
+                          className="tr-edit-input"
+                          value={editForm.hotelId}
+                          onChange={(e) => setEditForm((f) => ({ ...f, hotelId: e.target.value }))}
+                        >
+                          <option value="">— Keep current hotel —</option>
+                          {Object.entries(hotelsByCity).map(([city, cityHotels]) => (
+                            <optgroup key={city} label={city}>
+                              {cityHotels.map((h) => (
+                                <option key={h.id} value={h.id}>
+                                  {h.name} · {h.tier} (€{h.price_double}/night)
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                      </div>
+                      {/* Check-in */}
+                      <div>
+                        <label className="tr-edit-label">Check-in</label>
+                        <input
+                          type="date"
+                          className="tr-edit-input"
+                          value={editForm.hotel_checkin}
+                          onChange={(e) => setEditForm((f) => ({ ...f, hotel_checkin: e.target.value }))}
+                        />
+                      </div>
+                      {/* Check-out */}
+                      <div>
+                        <label className="tr-edit-label">Check-out</label>
+                        <input
+                          type="date"
+                          className="tr-edit-input"
+                          value={editForm.hotel_checkout}
+                          onChange={(e) => setEditForm((f) => ({ ...f, hotel_checkout: e.target.value }))}
+                        />
+                      </div>
+                      {/* Status */}
+                      <div>
+                        <label className="tr-edit-label">Status</label>
+                        <select
+                          className="tr-edit-input"
+                          value={editForm.hotel_status}
+                          onChange={(e) => setEditForm((f) => ({ ...f, hotel_status: e.target.value }))}
+                        >
+                          {HOTEL_STATUSES.filter((s) => s.value !== 'all').map((s) => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {/* Confirmation Ref */}
+                      <div>
+                        <label className="tr-edit-label">Confirmation Ref</label>
+                        <input
+                          className="tr-edit-input"
+                          placeholder="Supplier confirmation number"
+                          value={editForm.hotel_confirmation_ref}
+                          onChange={(e) => setEditForm((f) => ({ ...f, hotel_confirmation_ref: e.target.value }))}
+                        />
+                      </div>
                     </div>
-                  )}
-                </div>
+                    <div className="tr-edit-actions">
+                      <button className="btn btn-success" onClick={() => saveEdit(item)}>Save</button>
+                      <button className="btn btn-outline" onClick={cancelEdit}>Cancel</button>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Inline edit form */}
-              {editingIdx === idx && (
-                <div className="ht-inline-edit">
-                  <div className="tr-edit-grid">
-                    {/* Hotel picker */}
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label className="tr-edit-label">Hotel</label>
-                      <select
-                        className="tr-edit-input"
-                        value={editForm.hotelId}
-                        onChange={(e) => setEditForm((f) => ({ ...f, hotelId: e.target.value }))}
-                      >
-                        <option value="">— Keep current hotel —</option>
-                        {Object.entries(hotelsByCity).map(([city, cityHotels]) => (
-                          <optgroup key={city} label={city}>
-                            {cityHotels.map((h) => (
-                              <option key={h.id} value={h.id}>
-                                {h.name} · {h.tier} (€{h.price_double}/night)
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="tr-edit-label">Status</label>
-                      <select
-                        className="tr-edit-input"
-                        value={editForm.hotel_status}
-                        onChange={(e) => setEditForm((f) => ({ ...f, hotel_status: e.target.value }))}
-                      >
-                        {HOTEL_STATUSES.filter((s) => s.value !== 'all').map((s) => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="tr-edit-label">Confirmation Ref</label>
-                      <input
-                        className="tr-edit-input"
-                        placeholder="Supplier confirmation number"
-                        value={editForm.hotel_confirmation_ref}
-                        onChange={(e) => setEditForm((f) => ({ ...f, hotel_confirmation_ref: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="tr-edit-actions">
-                    <button className="btn btn-success" onClick={() => saveEdit(item)}>Save</button>
-                    <button className="btn btn-outline" onClick={cancelEdit}>Cancel</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
