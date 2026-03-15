@@ -2648,6 +2648,7 @@ tbody tr:hover {
 .bk-client-name { font-weight: 700; color: var(--color-text); font-size: 0.95rem; margin-bottom: 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bk-chips { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
 .bk-chip { display: flex; align-items: center; gap: 3px; font-size: 0.73rem; color: var(--color-text-light); }
+.bk-chip-sub { margin-top: 6px; }
 
 .bk-badge {
   display: inline-flex; align-items: center; gap: 5px;
@@ -2659,12 +2660,15 @@ tbody tr:hover {
 .bk-badge-notpaid  { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
 .bk-badge-cancelled{ background: #ffedd5; color: #ea580c; border-color: #fed7aa; }
 .bk-badge-passed   { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
+.bk-badge-sub      { display: inline-flex; margin-top: 6px; }
 
 /* Date section */
-.bk-dates { display: flex; align-items: center; gap: 0.75rem; padding: 0 1.1rem; flex-shrink: 0; }
+.bk-dates { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0 1.1rem; flex-shrink: 0; }
+.bk-dates-row { display: flex; align-items: center; gap: 0.75rem; }
 .bk-date-block { text-align: center; }
 .bk-date-day { font-size: 1.4rem; font-weight: 900; color: var(--color-text); line-height: 1; }
 .bk-date-mon { font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-light); margin-top: 2px; }
+.bk-date-nights { font-size: 0.63rem; font-weight: 600; color: var(--color-text-light); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 999px; padding: 1px 8px; }
 .bk-date-arrow { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--color-primary); }
 .bk-date-arrow-line { width: 28px; height: 1px; background: var(--color-border); }
 
@@ -2680,6 +2684,9 @@ tbody tr:hover {
   display: flex; align-items: center; justify-content: center;
   color: var(--color-text-light); flex-shrink: 0;
 }
+/* Cost per person */
+.bk-cost-value { font-size: 1rem; font-weight: 700; color: var(--color-text); }
+.bk-cost-empty { font-size: 1rem; color: var(--color-text-light); }
 
 /* Status indicators */
 .bk-status { display: flex; align-items: center; gap: 6px; }

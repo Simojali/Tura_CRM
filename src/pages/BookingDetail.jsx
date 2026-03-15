@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { MOCK_BOOKINGS } from '../lib/mockData'
 import { loadItinerary, saveItinerary, initItinerary } from '../lib/itineraryUtils'
@@ -41,11 +41,12 @@ const normalizeBooking = (data) => ({
 export default function BookingDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [booking, setBooking] = useState(null)
   const [itinerary, setItinerary] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
-  const [showEditModal, setShowEditModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(searchParams.get('edit') === 'true')
   const [activeTab, setActiveTab] = useState('overview')
 
   // ── Tab counts (derived from itinerary) ─────────────────────────────

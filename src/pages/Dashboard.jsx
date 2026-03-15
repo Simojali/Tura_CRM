@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { generateReferenciaRuta } from '../lib/constants'
+import { loadItinerary, computeTotals } from '../lib/itineraryUtils'
 import { MOCK_BOOKINGS } from '../lib/mockData'
 import NewBookingModal from '../components/NewBookingModal'
 import Toast from '../components/Toast'
@@ -17,8 +18,8 @@ const PeopleIcon = () => (
   </svg>
 )
 const PlaneIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-    <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M2.5 19h19v1.5H2.5zM22 9.5c0-1.1-.9-2-2-2h-5.5L10 2H8l2.5 5.5H5L3.5 6H2l1 3.5L2 13h1.5L5 11.5h5.5L8 17h2l4.5-5.5H20c1.1 0 2-.9 2-2z"/>
   </svg>
 )
 const DotsIcon = () => (
@@ -38,6 +39,13 @@ const RefIcon = () => (
   <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
     <rect x="1.5" y="1.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
     <path d="M4 5h6M4 7.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+)
+const AgencyIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+    <path d="M2 12V5.5L7 2l5 3.5V12" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+    <rect x="4.5" y="8" width="2" height="4" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
+    <rect x="7.5" y="8" width="2" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
   </svg>
 )
 const MountainIcon = () => (
@@ -211,6 +219,8 @@ export default function Dashboard() {
             const badge     = getPaymentBadge(b)
             const remaining = (Number(b.group_price_eur) || 0) - (Number(b.paid) || 0)
             const isZero    = remaining <= 0
+            const itinerary = loadItinerary(b.id) || []
+            const { costPerPerson } = computeTotals(itinerary, b)
 
             return (
               <div key={b.id} className="bk-card" style={{ zIndex: (noteOpen === b.id || menuOpen === b.id) ? 10 : 'auto' }} onClick={() => navigate(`/bookings/${b.id}`)}>
@@ -220,40 +230,46 @@ export default function Dashboard() {
                   <div className="bk-client">
                     <div className="bk-client-name">{b.client_name}</div>
                     <div className="bk-chips">
-                      <span className="bk-chip"><PeopleIcon /> {b.number_of_guests} {b.number_of_guests === 1 ? 'Guest' : 'Guests'}</span>
-                      <span className="bk-chip"><RefIcon /> {b.referencia_ruta}</span>
+                      <span className="bk-chip" title="Number of guests"><PeopleIcon /> {b.number_of_guests} {b.number_of_guests === 1 ? 'Guest' : 'Guests'}</span>
+                      <span className="bk-chip" title="Booking reference"><RefIcon /> {b.referencia_ruta}</span>
                     </div>
-                    <span className={badge.cls}>{badge.label}</span>
+                    {b.referencia_agencia && (
+                      <div className="bk-chips" style={{ marginBottom: '0.4rem' }}>
+                        <span className="bk-chip" title="Agency reference"><AgencyIcon /> {b.referencia_agencia}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="bk-vdiv" />
 
                   {/* Dates */}
                   <div className="bk-dates">
-                    <div className="bk-date-block">
-                      <div className="bk-date-day">{fmtDay(b.check_in)}</div>
-                      <div className="bk-date-mon">{fmtMon(b.check_in)}</div>
+                    <div className="bk-dates-row">
+                      <div className="bk-date-block" title="Check-in date">
+                        <div className="bk-date-day">{fmtDay(b.check_in)}</div>
+                        <div className="bk-date-mon">{fmtMon(b.check_in)}</div>
+                      </div>
+                      <div className="bk-date-arrow">
+                        <PlaneIcon />
+                      </div>
+                      <div className="bk-date-block" title="Check-out date">
+                        <div className="bk-date-day">{fmtDay(b.check_out)}</div>
+                        <div className="bk-date-mon">{fmtMon(b.check_out)}</div>
+                      </div>
                     </div>
-                    <div className="bk-date-arrow">
-                      <div className="bk-date-arrow-line" />
-                      <PlaneIcon />
-                      <div className="bk-date-arrow-line" />
-                    </div>
-                    <div className="bk-date-block">
-                      <div className="bk-date-day">{fmtDay(b.check_out)}</div>
-                      <div className="bk-date-mon">{fmtMon(b.check_out)}</div>
-                    </div>
+                    {b.check_in && b.check_out && (() => {
+                      const days = Math.round((new Date(b.check_out) - new Date(b.check_in)) / (1000 * 60 * 60 * 24))
+                      return days > 0 ? <div className="bk-date-nights">{days} {days === 1 ? 'day' : 'days'}</div> : null
+                    })()}
                   </div>
 
                   <div className="bk-vdiv" />
 
-                  {/* Activities */}
-                  <div className="bk-section">
-                    <div className="bk-section-label">Activities</div>
-                    <div className="bk-activities-icons">
-                      {ACTIVITY_ICONS.map((Icon, i) => (
-                        <span key={i} className="bk-act-icon"><Icon /></span>
-                      ))}
+                  {/* Cost per person (NET, calculated from itinerary) */}
+                  <div className="bk-section" style={{ minWidth: 110 }}>
+                    <div className="bk-section-label">Cost / person</div>
+                    <div className="bk-cost-value">
+                      {costPerPerson > 0 ? fmtCurrency(costPerPerson) : <span className="bk-cost-empty">—</span>}
                     </div>
                   </div>
 
@@ -271,21 +287,20 @@ export default function Dashboard() {
 
                   {/* Balance */}
                   <div className="bk-section" style={{ minWidth: 190 }}>
-                    <div className="bk-section-label">Balance</div>
                     <div className="bk-balance-row">
                       <div className="bk-balance-item">
-                        <span className="bk-balance-sublabel">Paid</span>
-                        <span className="bk-balance-paid">{fmtCurrency(b.paid)}</span>
-                      </div>
-                      <div className="bk-balance-sep" />
-                      <div className="bk-balance-item">
-                        <span className="bk-balance-sublabel">Remaining</span>
+                        <span className="bk-balance-sublabel">Remaining balance</span>
                         <div className="bk-balance">
                           <span className={`bk-balance-dot ${isZero ? 'bk-balance-dot-zero' : 'bk-balance-dot-primary'}`} />
                           <span className={`bk-balance-amount ${isZero ? 'bk-balance-amount-zero' : 'bk-balance-amount-primary'}`}>
                             {fmtCurrency(remaining)}
                           </span>
                         </div>
+                      </div>
+                      <div className="bk-balance-sep" />
+                      <div className="bk-balance-item">
+                        <span className="bk-balance-sublabel">Payment</span>
+                        <span className={badge.cls}>{badge.label}</span>
                       </div>
                     </div>
                   </div>
@@ -343,15 +358,9 @@ export default function Dashboard() {
                         <div className="bk-dots-menu" onMouseDown={e => e.stopPropagation()}>
                           <button
                             className="bk-dots-menu-item"
-                            onClick={() => navigate(`/bookings/${b.id}`)}
+                            onClick={e => { e.stopPropagation(); navigate(`/bookings/${b.id}?edit=true`) }}
                           >
-                            Open booking
-                          </button>
-                          <button
-                            className="bk-dots-menu-item"
-                            onClick={e => handleNoteOpen(e, b)}
-                          >
-                            {b.special_request ? 'Edit note' : 'Add note'}
+                            Edit booking
                           </button>
                           <div className="bk-dots-menu-divider" />
                           <button
