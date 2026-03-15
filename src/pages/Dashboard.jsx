@@ -16,7 +16,6 @@ const PeopleIcon = () => (
     <path d="M10 5a1.5 1.5 0 0 0 0-3M11.5 9.5c1 .5 1.5 1.5 1.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
   </svg>
 )
-
 const PlaneIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
     <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -77,10 +76,10 @@ const getPaymentBadge = (b) => {
   if (b.reserv_status === 'Passed')    return { label: 'Passed',    cls: 'bk-badge bk-badge-passed' }
   const total = Number(b.group_price_eur) || 0
   const paid  = Number(b.paid) || 0
-  if (total === 0)    return { label: 'No price',      cls: 'bk-badge bk-badge-passed' }
-  if (paid >= total)  return { label: 'Full paid',     cls: 'bk-badge bk-badge-full' }
-  if (paid > 0)       return { label: 'Partially paid',cls: 'bk-badge bk-badge-partial' }
-  return                     { label: 'Not paid',      cls: 'bk-badge bk-badge-notpaid' }
+  if (total === 0)    return { label: 'No price',       cls: 'bk-badge bk-badge-passed' }
+  if (paid >= total)  return { label: 'Full paid',      cls: 'bk-badge bk-badge-full' }
+  if (paid > 0)       return { label: 'Partially paid', cls: 'bk-badge bk-badge-partial' }
+  return                     { label: 'Not paid',       cls: 'bk-badge bk-badge-notpaid' }
 }
 
 const fmtDay = (d) => d ? new Date(d).getDate() : '—'
@@ -90,11 +89,22 @@ const fmtCurrency = (v) =>
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [bookings, setBookings] = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [toast, setToast] = useState(null)
+  const [bookings,    setBookings]    = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [showModal,   setShowModal]   = useState(false)
+  const [toast,       setToast]       = useState(null)
+  const [noteOpen,    setNoteOpen]    = useState(null)   // bookingId with note popover open
+  const [menuOpen,    setMenuOpen]    = useState(null)   // bookingId with dots menu open
+  const [noteText,    setNoteText]    = useState('')
+  const [noteSaving,  setNoteSaving]  = useState(false)
   const navigate = useNavigate()
+
+  // Close all menus on outside click
+  useEffect(() => {
+    const handler = () => { setMenuOpen(null); setNoteOpen(null) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const fetchBookings = useCallback(async () => {
     setLoading(true)
@@ -144,6 +154,37 @@ export default function Dashboard() {
     fetchBookings()
   }
 
+  const handleNoteOpen = (e, b) => {
+    e.stopPropagation()
+    setNoteText(b.special_request || '')
+    setNoteOpen(noteOpen === b.id ? null : b.id)
+    setMenuOpen(null)
+  }
+
+  const handleSaveNote = async (e, bookingId) => {
+    e.stopPropagation()
+    setNoteSaving(true)
+    if (isSupabaseConfigured) {
+      await supabase.from('bookings').update({ special_request: noteText }).eq('id', bookingId)
+    }
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, special_request: noteText } : b))
+    setNoteSaving(false)
+    setNoteOpen(null)
+    setToast({ message: 'Note saved', type: 'success' })
+  }
+
+  const handleDeleteBooking = async (e, bookingId) => {
+    e.stopPropagation()
+    setMenuOpen(null)
+    if (!window.confirm('Delete this booking? This cannot be undone.')) return
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('bookings').delete().eq('id', bookingId)
+      if (error) { setToast({ message: 'Error deleting booking', type: 'error' }); return }
+    }
+    setBookings(prev => prev.filter(b => b.id !== bookingId))
+    setToast({ message: 'Booking deleted', type: 'success' })
+  }
+
   return (
     <>
       <div className="page-header">
@@ -166,7 +207,7 @@ export default function Dashboard() {
             const isZero    = remaining <= 0
 
             return (
-              <div key={b.id} className="bk-card" onClick={() => navigate(`/bookings/${b.id}`)}>
+              <div key={b.id} className="bk-card" style={{ zIndex: (noteOpen === b.id || menuOpen === b.id) ? 10 : 'auto' }} onClick={() => navigate(`/bookings/${b.id}`)}>
                 <div className="bk-card-inner">
 
                   {/* Client */}
@@ -244,13 +285,79 @@ export default function Dashboard() {
                   </div>
 
                   {/* Actions */}
-                  <div className="bk-actions" onClick={e => e.stopPropagation()}>
-                    {b.special_request ? (
-                      <button className="bk-note-btn"><NoteIcon /> View note</button>
-                    ) : (
-                      <button className="bk-note-btn">+ Add note</button>
-                    )}
-                    <button className="bk-dots-btn"><DotsIcon /></button>
+                  <div className="bk-actions" style={{ zIndex: (noteOpen === b.id || menuOpen === b.id) ? 300 : 'auto' }} onClick={e => e.stopPropagation()}>
+
+                    {/* Note button + popover */}
+                    <div style={{ position: 'relative' }}>
+                      <button className="bk-note-btn" onClick={e => handleNoteOpen(e, b)}>
+                        {b.special_request ? <><NoteIcon /> View note</> : '+ Add note'}
+                      </button>
+                      {noteOpen === b.id && (
+                        <div className="bk-note-popover" onMouseDown={e => e.stopPropagation()}>
+                          <div className="bk-note-popover-title">
+                            {b.special_request ? 'Note' : 'Add note'}
+                          </div>
+                          <textarea
+                            className="bk-note-textarea"
+                            value={noteText}
+                            onChange={e => setNoteText(e.target.value)}
+                            placeholder="Write a note…"
+                            rows={3}
+                            autoFocus
+                          />
+                          <div className="bk-note-popover-footer">
+                            <button className="bk-note-cancel" onClick={() => setNoteOpen(null)}>
+                              Cancel
+                            </button>
+                            <button
+                              className="bk-note-save"
+                              onClick={e => handleSaveNote(e, b.id)}
+                              disabled={noteSaving}
+                            >
+                              {noteSaving ? 'Saving…' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dots button + dropdown menu */}
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        className="bk-dots-btn"
+                        onClick={e => {
+                          e.stopPropagation()
+                          setMenuOpen(menuOpen === b.id ? null : b.id)
+                          setNoteOpen(null)
+                        }}
+                      >
+                        <DotsIcon />
+                      </button>
+                      {menuOpen === b.id && (
+                        <div className="bk-dots-menu" onMouseDown={e => e.stopPropagation()}>
+                          <button
+                            className="bk-dots-menu-item"
+                            onClick={() => navigate(`/bookings/${b.id}`)}
+                          >
+                            Open booking
+                          </button>
+                          <button
+                            className="bk-dots-menu-item"
+                            onClick={e => handleNoteOpen(e, b)}
+                          >
+                            {b.special_request ? 'Edit note' : 'Add note'}
+                          </button>
+                          <div className="bk-dots-menu-divider" />
+                          <button
+                            className="bk-dots-menu-item bk-dots-menu-danger"
+                            onClick={e => handleDeleteBooking(e, b.id)}
+                          >
+                            Delete booking
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
                   </div>
 
                 </div>
