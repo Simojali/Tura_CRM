@@ -133,7 +133,13 @@ export default function Dashboard() {
     const payload = {
       ...formData, referencia_ruta,
       number_of_guests: Number(formData.number_of_guests) || 0,
-      n_dias:          formData.n_dias          === '' ? null : Number(formData.n_dias),
+      n_dias: (() => {
+        if (formData.check_in && formData.check_out) {
+          const diff = (new Date(formData.check_out) - new Date(formData.check_in)) / (1000 * 60 * 60 * 24)
+          return diff > 0 ? diff : null
+        }
+        return formData.n_dias === '' ? null : Number(formData.n_dias)
+      })(),
       single_rooms:    Number(formData.single_rooms)  || 0,
       double_rooms:    Number(formData.double_rooms)  || 0,
       triple_rooms:    Number(formData.triple_rooms)  || 0,

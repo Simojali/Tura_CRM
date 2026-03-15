@@ -31,12 +31,27 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
   const [form, setForm] = useState(initialData || EMPTY_FORM)
   const [saving, setSaving] = useState(false)
 
+  const calcDays = (check_in, check_out) => {
+    if (!check_in || !check_out) return ''
+    const diff = (new Date(check_out) - new Date(check_in)) / (1000 * 60 * 60 * 24)
+    return diff > 0 ? diff : ''
+  }
+
   const handleChange = (e) => {
     const { name, value, type } = e.target
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value,
-    }))
+    setForm((prev) => {
+      const updated = {
+        ...prev,
+        [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value,
+      }
+      if (name === 'check_in' || name === 'check_out') {
+        updated.n_dias = calcDays(
+          name === 'check_in' ? value : updated.check_in,
+          name === 'check_out' ? value : updated.check_out
+        )
+      }
+      return updated
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -155,18 +170,6 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
             onChange={handleChange}
             min="1"
             required
-          />
-        </div>
-
-        {/* Number of Days */}
-        <div className="form-group">
-          <label>Number of Days</label>
-          <input
-            type="number"
-            name="n_dias"
-            value={form.n_dias}
-            onChange={handleChange}
-            min="0"
           />
         </div>
 

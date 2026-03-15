@@ -153,7 +153,13 @@ export default function BookingDetail() {
       check_in: formData.check_in || null,
       check_out: formData.check_out || null,
       number_of_guests: Number(formData.number_of_guests) || 0,
-      n_dias: formData.n_dias === '' ? null : Number(formData.n_dias),
+      n_dias: (() => {
+        if (formData.check_in && formData.check_out) {
+          const diff = (new Date(formData.check_out) - new Date(formData.check_in)) / (1000 * 60 * 60 * 24)
+          return diff > 0 ? diff : null
+        }
+        return formData.n_dias === '' ? null : Number(formData.n_dias)
+      })(),
       type_of_hotels: formData.type_of_hotels || null,
       single_rooms: Number(formData.single_rooms) || 0,
       double_rooms: Number(formData.double_rooms) || 0,
