@@ -193,10 +193,6 @@ export default function BookingSummaryCard({ booking, onEdit }) {
               {remaining > 0 && <div className="bc-pay-sub bc-pay-sub--warning">Due before travel</div>}
               {remaining === 0 && <div className="bc-pay-sub bc-pay-sub--success">Paid in full</div>}
             </div>
-            <div className="bc-pay-cell">
-              <div className="bc-pay-label">Invoice</div>
-              <div className={`bc-pay-value${!booking.factura ? ' bc-info-empty' : ''}`}>{booking.factura || '—'}</div>
-            </div>
           </div>
 
           {/* Note */}

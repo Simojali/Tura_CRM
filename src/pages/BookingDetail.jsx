@@ -33,7 +33,6 @@ const normalizeBooking = (data) => ({
   flight_number: data.flight_number || '',
   flight_hour: data.flight_hour || '',
   flight_return: data.flight_return || '',
-  factura: data.factura || '',
   type_of_hotels: data.type_of_hotels || '',
   reserv_status: data.reserv_status || 'Pending',
   special_request: data.special_request || '',
@@ -171,7 +170,6 @@ export default function BookingDetail() {
       group_price_eur: formData.group_price_eur === '' ? null : Number(formData.group_price_eur),
       group_price_mad: formData.group_price_mad === '' ? null : Number(formData.group_price_mad),
       paid: formData.paid === '' ? 0 : Number(formData.paid),
-      factura: formData.factura || null,
       reserv_status: formData.reserv_status,
       special_request: formData.special_request || null,
     }

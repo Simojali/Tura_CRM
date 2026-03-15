@@ -22,7 +22,6 @@ const EMPTY_FORM = {
   group_price_eur: '',
   group_price_mad: '',
   paid: '',
-  factura: '',
   reserv_status: 'Pending',
   special_request: '',
 }
@@ -103,10 +102,10 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
           </select>
         </div>
 
-        {/* Route Reference (only shown on detail page, read-only) */}
+        {/* Booking Reference (only shown on detail page, read-only) */}
         {isDetail && (
           <div className="form-group">
-            <label>Route Reference</label>
+            <label>Booking Reference</label>
             <input
               type="text"
               value={form.referencia_ruta || ''}
@@ -317,16 +316,6 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
           <div className="calculated-value">
             {restOfPayment.toFixed(2)} EUR
           </div>
-        </div>
-
-        <div className="form-group">
-          <label>Invoice</label>
-          <input
-            type="text"
-            name="factura"
-            value={form.factura}
-            onChange={handleChange}
-          />
         </div>
 
         {/* Status */}
