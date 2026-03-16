@@ -1,17 +1,34 @@
 import { CLIENT_TYPES } from './constants'
 
 /**
- * Build N empty itinerary rows from a booking's check_in + n_dias.
+ * Compute the number of days for a booking (inclusive: check-in day + check-out day).
+ * e.g. Jun 10 → Jun 17 = 8 days, 7 nights.
+ * Falls back to stored n_dias if dates are not available.
+ */
+export function computeDays(booking) {
+  const { check_in, check_out, n_dias } = booking
+  if (check_in && check_out) {
+    const diff = Math.round((new Date(check_out) - new Date(check_in)) / (1000 * 60 * 60 * 24))
+    return diff > 0 ? diff + 1 : 1
+  }
+  return Number(n_dias) || 0
+}
+
+/**
+ * Build N empty itinerary rows from a booking's check_in + check_out (or n_dias).
  * Dates are computed using local calendar arithmetic to avoid UTC-offset issues.
  */
 export function initItinerary(booking) {
-  const { check_in, n_dias } = booking
-  if (!check_in || !n_dias || Number(n_dias) <= 0) return []
+  const { check_in } = booking
+  if (!check_in) return []
+
+  const numDays = computeDays(booking)
+  if (numDays <= 0) return []
 
   const [year, month, day] = check_in.split('-').map(Number)
   const rows = []
 
-  for (let i = 0; i < Number(n_dias); i++) {
+  for (let i = 0; i < numDays; i++) {
     const d = new Date(year, month - 1, day + i)
     const mm = String(d.getMonth() + 1).padStart(2, '0')
     const dd = String(d.getDate()).padStart(2, '0')
@@ -31,6 +48,21 @@ export function initItinerary(booking) {
   }
 
   return rows
+}
+
+/**
+ * Reconcile a saved itinerary against the expected rows from the booking.
+ * - If saved has fewer rows than expected: append the missing empty rows.
+ * - If saved has more rows than expected: trim the extras.
+ * - If counts match: return saved as-is.
+ */
+export function reconcileItinerary(saved, booking) {
+  const expected = initItinerary(booking)
+  if (!saved || saved.length === expected.length) return saved || expected
+  if (saved.length < expected.length) {
+    return [...saved, ...expected.slice(saved.length)]
+  }
+  return saved.slice(0, expected.length)
 }
 
 /** Read saved itinerary from localStorage. Returns null if none stored yet. */

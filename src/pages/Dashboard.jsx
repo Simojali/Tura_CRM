@@ -2,10 +2,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { generateReferenciaRuta } from '../lib/constants'
-import { loadItinerary, computeTotals } from '../lib/itineraryUtils'
+import { loadItinerary, computeTotals, computeDays } from '../lib/itineraryUtils'
 import { MOCK_BOOKINGS } from '../lib/mockData'
 import NewBookingModal from '../components/NewBookingModal'
 import Toast from '../components/Toast'
+import { fmtCurrency, calcRemaining } from '../lib/formatters'
 
 const isSupabaseConfigured = !import.meta.env.VITE_SUPABASE_URL?.includes('your-project')
 
@@ -92,8 +93,6 @@ const getPaymentBadge = (b) => {
 
 const fmtDay = (d) => d ? new Date(d).getDate() : '—'
 const fmtMon = (d) => d ? new Date(d).toLocaleDateString('en-GB', { month: 'short' }) : ''
-const fmtCurrency = (v) =>
-  v == null ? '—' : `€${Number(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
@@ -142,11 +141,8 @@ export default function Dashboard() {
       ...formData, referencia_ruta,
       number_of_guests: Number(formData.number_of_guests) || 0,
       n_dias: (() => {
-        if (formData.check_in && formData.check_out) {
-          const diff = (new Date(formData.check_out) - new Date(formData.check_in)) / (1000 * 60 * 60 * 24)
-          return diff > 0 ? diff : null
-        }
-        return formData.n_dias === '' ? null : Number(formData.n_dias)
+        const days = computeDays(formData)
+        return days > 0 ? days : (formData.n_dias === '' ? null : Number(formData.n_dias))
       })(),
       single_rooms:    Number(formData.single_rooms)  || 0,
       double_rooms:    Number(formData.double_rooms)  || 0,
@@ -217,7 +213,7 @@ export default function Dashboard() {
         ) : (
           bookings.map((b) => {
             const badge     = getPaymentBadge(b)
-            const remaining = (Number(b.group_price_eur) || 0) - (Number(b.paid) || 0)
+            const remaining = calcRemaining(b)
             const isZero    = remaining <= 0
             const itinerary = loadItinerary(b.id) || []
             const { costPerPerson } = computeTotals(itinerary, b)
@@ -257,9 +253,9 @@ export default function Dashboard() {
                         <div className="bk-date-mon">{fmtMon(b.check_out)}</div>
                       </div>
                     </div>
-                    {b.check_in && b.check_out && (() => {
-                      const days = Math.round((new Date(b.check_out) - new Date(b.check_in)) / (1000 * 60 * 60 * 24))
-                      return days > 0 ? <div className="bk-date-nights">{days} {days === 1 ? 'day' : 'days'}</div> : null
+                    {(() => {
+                      const days = computeDays(b)
+                      return days > 1 ? <div className="bk-date-nights">{days} days</div> : null
                     })()}
                   </div>
 

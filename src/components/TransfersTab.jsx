@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
+import { fmtDate, fmtCost } from '../lib/formatters'
 
 const refTransfers = MOCK_REFERENCE_DATA.filter((r) => r.category === 'transfer')
 const refTransports = MOCK_REFERENCE_DATA.filter((r) => r.category === 'transport')
@@ -144,13 +145,6 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
   const cancelEdit = () => {
     setEditingIdx(null)
     setEditForm({})
-  }
-
-  // ── Date formatter ────────────────────────────────────────────────────
-  const fmtDate = (dateStr) => {
-    if (!dateStr) return ''
-    const [y, m, d] = dateStr.split('-').map(Number)
-    return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
   }
 
   // ── Count per status for filter badges ───────────────────────────────
@@ -400,7 +394,7 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
                 </div>
 
                 {/* Cost */}
-                <div className="tr-cost">€{Number(item.cost).toFixed(0)}</div>
+                <div className="tr-cost">{fmtCost(item.cost)}</div>
 
                 {/* ⋮ Menu */}
                 <div className="tr-actions">

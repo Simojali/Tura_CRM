@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
+import { fmtDate, fmtCost } from '../lib/formatters'
 
 const activities = MOCK_REFERENCE_DATA.filter((r) => r.category === 'activity')
 
@@ -110,13 +111,6 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
   }
 
   const cancelEdit = () => { setEditingIdx(null); setEditForm({}) }
-
-  // ── Helpers ───────────────────────────────────────────────────────────
-  const fmtDate = (dateStr) => {
-    if (!dateStr) return ''
-    const [y, m, day] = dateStr.split('-').map(Number)
-    return new Date(y, m - 1, day).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-  }
 
   // Activity options for add form: filter by day's city or show all grouped
   const selectedDayForAdd = addForm.dayIdx !== '' ? itinerary[Number(addForm.dayIdx)] : null
@@ -257,7 +251,7 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
                 </div>
 
                 {/* Cost */}
-                <div className="at-cost">€{Number(item.cost).toFixed(0)}</div>
+                <div className="at-cost">{fmtCost(item.cost)}</div>
 
                 {/* ⋮ Menu */}
                 <div className="at-actions">

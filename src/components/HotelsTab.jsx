@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
+import { fmtDate, fmtCost, fmtRooms, nextDay } from '../lib/formatters'
 
 const HOTEL_STATUSES = [
   { value: 'all',       label: 'All' },
@@ -50,15 +51,7 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   // ── Auto-compute checkout: next day in itinerary, or +1 day ──────────
   const getAutoCheckout = (rowIndex) => {
     if (rowIndex + 1 < itinerary.length) return itinerary[rowIndex + 1].date
-    const dateStr = itinerary[rowIndex]?.date
-    if (!dateStr) return ''
-    const [y, m, dy] = dateStr.split('-').map(Number)
-    const next = new Date(y, m - 1, dy + 1)
-    return [
-      next.getFullYear(),
-      String(next.getMonth() + 1).padStart(2, '0'),
-      String(next.getDate()).padStart(2, '0'),
-    ].join('-')
+    return nextDay(itinerary[rowIndex]?.date) || ''
   }
 
   // ── Resolved checkin/checkout for display (stored or auto-computed) ───
@@ -165,22 +158,8 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   const cancelEdit = () => { setEditingIdx(null); setEditForm({}) }
 
   // ── Helpers ───────────────────────────────────────────────────────────
-  const fmtDate = (dateStr) => {
-    if (!dateStr) return ''
-    const [y, m, day] = dateStr.split('-').map(Number)
-    return new Date(y, m - 1, day).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-  }
-
   const countByStatus = (status) =>
     hotelRows.filter((row) => (row.hotel_status || 'requested') === status).length
-
-  const roomSummary = () => {
-    const parts = []
-    if (Number(booking.single_rooms) > 0) parts.push(`${booking.single_rooms}× Single`)
-    if (Number(booking.double_rooms) > 0) parts.push(`${booking.double_rooms}× Double`)
-    if (Number(booking.triple_rooms) > 0) parts.push(`${booking.triple_rooms}× Triple`)
-    return parts.join(' · ') || '—'
-  }
 
   // Hotel options for add / edit forms
   const selectedDayForAdd = addForm.dayIdx !== '' ? itinerary[Number(addForm.dayIdx)] : null
@@ -399,7 +378,7 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
                   </div>
 
                   {/* Rooms */}
-                  <div className="ht-rooms">{roomSummary()}</div>
+                  <div className="ht-rooms">{fmtRooms(booking) || '—'}</div>
 
                   {/* Status */}
                   <div className="ht-status">
@@ -416,7 +395,7 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
                   </div>
 
                   {/* Cost */}
-                  <div className="ht-cost">€{Number(item.hotel_cost).toFixed(0)}</div>
+                  <div className="ht-cost">{fmtCost(item.hotel_cost)}</div>
 
                   {/* ⋮ Menu */}
                   <div className="ht-actions">

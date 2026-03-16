@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { MOCK_BOOKINGS } from '../lib/mockData'
-import { loadItinerary, saveItinerary, initItinerary } from '../lib/itineraryUtils'
+import { loadItinerary, saveItinerary, initItinerary, reconcileItinerary, computeDays } from '../lib/itineraryUtils'
 import BookingSummaryCard from '../components/BookingSummaryCard'
 import BookingForm from '../components/BookingForm'
 import TripOverview from '../components/TripOverview'
@@ -98,7 +98,7 @@ export default function BookingDetail() {
       setBooking(b)
       if (b) {
         const saved = loadItinerary(id)
-        setItinerary(saved || initItinerary(b))
+        setItinerary(reconcileItinerary(saved, b))
       }
       setLoading(false)
       return
@@ -138,7 +138,7 @@ export default function BookingDetail() {
       const b = normalizeBooking({ ...booking, ...formData })
       setBooking(b)
       const saved = loadItinerary(id)
-      if (!saved) setItinerary(initItinerary(b))
+      setItinerary(reconcileItinerary(saved, b))
       setShowEditModal(false)
       setToast({ message: 'Booking updated successfully', type: 'success' })
       return
@@ -154,11 +154,8 @@ export default function BookingDetail() {
       check_out: formData.check_out || null,
       number_of_guests: Number(formData.number_of_guests) || 0,
       n_dias: (() => {
-        if (formData.check_in && formData.check_out) {
-          const diff = (new Date(formData.check_out) - new Date(formData.check_in)) / (1000 * 60 * 60 * 24)
-          return diff > 0 ? diff : null
-        }
-        return formData.n_dias === '' ? null : Number(formData.n_dias)
+        const days = computeDays(formData)
+        return days > 0 ? days : (formData.n_dias === '' ? null : Number(formData.n_dias))
       })(),
       type_of_hotels: formData.type_of_hotels || null,
       single_rooms: Number(formData.single_rooms) || 0,

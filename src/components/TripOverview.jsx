@@ -1,6 +1,7 @@
 import { CITIES } from '../lib/referenceData'
 import { computeDayCost } from '../lib/itineraryUtils'
 import CostCalculations from './CostCalculations'
+import { fmtDate, fmtCost, fmtRooms, nextDay } from '../lib/formatters'
 
 export default function TripOverview({ booking, itinerary, onSave }) {
 
@@ -55,36 +56,14 @@ export default function TripOverview({ booking, itinerary, onSave }) {
   // ── Auto checkout date ────────────────────────────────────────────────
   const getAutoCheckout = (rowIndex) => {
     if (rowIndex + 1 < itinerary.length) return itinerary[rowIndex + 1].date
-    const dateStr = itinerary[rowIndex]?.date
-    if (!dateStr) return ''
-    const [y, m, d] = dateStr.split('-').map(Number)
-    const next = new Date(y, m - 1, d + 1)
-    return [
-      next.getFullYear(),
-      String(next.getMonth() + 1).padStart(2, '0'),
-      String(next.getDate()).padStart(2, '0'),
-    ].join('-')
+    return nextDay(itinerary[rowIndex]?.date) || ''
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────
-  const fmtDate = (dateStr) => {
-    if (!dateStr) return ''
-    const [y, m, d] = dateStr.split('-').map(Number)
-    return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-  }
-
   const fmtLong = (dateStr) => {
     if (!dateStr) return ''
     const [y, m, d] = dateStr.split('-').map(Number)
     return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  }
-
-  const roomSummary = () => {
-    const parts = []
-    if (Number(booking.single_rooms) > 0) parts.push(`${booking.single_rooms}× Single`)
-    if (Number(booking.double_rooms) > 0) parts.push(`${booking.double_rooms}× Double`)
-    if (Number(booking.triple_rooms) > 0) parts.push(`${booking.triple_rooms}× Triple`)
-    return parts.join(' · ') || ''
   }
 
   const statusLabel = (s) => {
@@ -106,7 +85,7 @@ export default function TripOverview({ booking, itinerary, onSave }) {
             const dayCost = computeDayCost(row)
             const checkin = row.hotel_checkin || row.date || ''
             const checkout = row.hotel_checkout || getAutoCheckout(i)
-            const rooms = roomSummary()
+            const rooms = fmtRooms(booking)
 
             return (
               <div key={i} className="to-day-card">
@@ -125,7 +104,7 @@ export default function TripOverview({ booking, itinerary, onSave }) {
                     </select>
                   </div>
                   {dayCost > 0 && (
-                    <span className="itin-day-cost-badge">€{dayCost.toFixed(0)}</span>
+                    <span className="itin-day-cost-badge">{fmtCost(dayCost)}</span>
                   )}
                 </div>
 
@@ -146,7 +125,7 @@ export default function TripOverview({ booking, itinerary, onSave }) {
                         {fmtDate(checkin)} → {fmtDate(checkout)}
                         {rooms && ` · ${rooms}`}
                         <span className="itin-item-cost" style={{ marginLeft: '0.5rem' }}>
-                          €{Number(row.hotel_cost).toFixed(0)}/night
+                          {fmtCost(row.hotel_cost)}/night
                         </span>
                       </div>
                       {row.hotel_confirmation_ref && (
@@ -188,7 +167,7 @@ export default function TripOverview({ booking, itinerary, onSave }) {
                             {statusLabel(item.status)}
                           </span>
                         )}
-                        <span className="itin-item-cost">€{Number(item.cost).toFixed(0)}</span>
+                        <span className="itin-item-cost">{fmtCost(item.cost)}</span>
                       </div>
                     ))
                   ) : (

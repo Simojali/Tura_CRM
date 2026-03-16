@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { computeDays } from '../lib/itineraryUtils'
+import { calcRemaining } from '../lib/formatters'
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
 const CalendarIcon = () => (
@@ -85,7 +87,7 @@ export default function BookingSummaryCard({ booking, onEdit }) {
     return parts.length > 0 ? parts.join(', ') + ' Rooms' : null
   }
 
-  const remaining = (Number(booking.group_price_eur) || 0) - (Number(booking.paid) || 0)
+  const remaining = calcRemaining(booking)
   const remainingClass =
     remaining === 0 ? 'remaining-zero' : remaining > 0 ? 'remaining-positive' : ''
 
@@ -147,9 +149,14 @@ export default function BookingSummaryCard({ booking, onEdit }) {
           <div className="bc-info-grid bc-info-grid--row2">
             <div className="bc-info-cell">
               <div className="bc-info-label">Duration</div>
-              <div className={`bc-info-value bc-info-value--plain${!booking.n_dias ? ' bc-info-empty' : ''}`}>
-                {booking.n_dias ? `${booking.n_dias} Days` : '—'}
-              </div>
+              {(() => {
+                const days = computeDays(booking)
+                return (
+                  <div className={`bc-info-value bc-info-value--plain${!days ? ' bc-info-empty' : ''}`}>
+                    {days ? `${days} Days` : '—'}
+                  </div>
+                )
+              })()}
             </div>
             <div className="bc-info-cell">
               <div className="bc-info-label">Hotel Type</div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PROVEEDORES, HOTEL_TYPES, RESERV_STATUSES, CLIENT_TYPES } from '../lib/constants'
+import { computeDays } from '../lib/itineraryUtils'
 
 const EMPTY_FORM = {
   proveedor: '',
@@ -30,12 +31,6 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
   const [form, setForm] = useState(initialData || EMPTY_FORM)
   const [saving, setSaving] = useState(false)
 
-  const calcDays = (check_in, check_out) => {
-    if (!check_in || !check_out) return ''
-    const diff = (new Date(check_out) - new Date(check_in)) / (1000 * 60 * 60 * 24)
-    return diff > 0 ? diff : ''
-  }
-
   const handleChange = (e) => {
     const { name, value, type } = e.target
     setForm((prev) => {
@@ -44,10 +39,8 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
         [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value,
       }
       if (name === 'check_in' || name === 'check_out') {
-        updated.n_dias = calcDays(
-          name === 'check_in' ? value : updated.check_in,
-          name === 'check_out' ? value : updated.check_out
-        )
+        const days = computeDays(updated)
+        updated.n_dias = days > 0 ? days : ''
       }
       return updated
     })
