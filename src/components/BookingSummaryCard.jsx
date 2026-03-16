@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { computeDays } from '../lib/itineraryUtils'
-import { calcRemaining } from '../lib/formatters'
+import { calcRemaining, fmtDate, fmtCurrency, fmtRooms, statusClass } from '../lib/formatters'
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
 const CalendarIcon = () => (
@@ -53,40 +53,6 @@ const RefIcon = () => (
 export default function BookingSummaryCard({ booking, onEdit }) {
   const [expanded, setExpanded] = useState(false)
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
-
-  const formatCurrency = (val) => {
-    if (val == null || val === '') return '—'
-    return Number(val).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
-
-  const getStatusClass = (status) => {
-    switch (status) {
-      case 'Confirmed': return 'status-confirmed'
-      case 'Pending':   return 'status-pending'
-      case 'Passed':    return 'status-passed'
-      default:          return ''
-    }
-  }
-
-  const buildRoomsLabel = () => {
-    const parts = []
-    if (booking.single_rooms > 0) parts.push(`${booking.single_rooms} Single`)
-    if (booking.double_rooms > 0) parts.push(`${booking.double_rooms} Double`)
-    if (booking.triple_rooms > 0) parts.push(`${booking.triple_rooms} Triple`)
-    return parts.length > 0 ? parts.join(', ') + ' Rooms' : null
-  }
-
   const remaining = calcRemaining(booking)
   const remainingClass =
     remaining === 0 ? 'remaining-zero' : remaining > 0 ? 'remaining-positive' : ''
@@ -101,7 +67,7 @@ export default function BookingSummaryCard({ booking, onEdit }) {
           <div className="bc-meta-line">
             <span className="bc-meta-chip"><UsersIcon /> {booking.number_of_guests} {booking.number_of_guests === 1 ? 'Guest' : 'Guests'}</span>
             <span className="bc-meta-chip"><RefIcon /> {booking.referencia_ruta}</span>
-            <span className={`status-badge ${getStatusClass(booking.reserv_status)}`}>
+            <span className={`status-badge ${statusClass(booking.reserv_status)}`}>
               {booking.reserv_status}
             </span>
           </div>
@@ -115,7 +81,7 @@ export default function BookingSummaryCard({ booking, onEdit }) {
         <div className="bc-info-cell">
           <div className="bc-info-label">Check In & Out</div>
           <div className="bc-info-value">
-            <CalendarIcon /> {formatDate(booking.check_in)} → {formatDate(booking.check_out)}
+            <CalendarIcon /> {fmtDate(booking.check_in)} → {fmtDate(booking.check_out)}
           </div>
         </div>
         <div className="bc-info-cell">
@@ -126,8 +92,8 @@ export default function BookingSummaryCard({ booking, onEdit }) {
         </div>
         <div className="bc-info-cell">
           <div className="bc-info-label">Rooms</div>
-          <div className={`bc-info-value${!buildRoomsLabel() ? ' bc-info-empty' : ''}`}>
-            <BedIcon /> {buildRoomsLabel() || '—'}
+          <div className={`bc-info-value${!fmtRooms(booking) ? ' bc-info-empty' : ''}`}>
+            <BedIcon /> {fmtRooms(booking) || '—'}
           </div>
         </div>
         <div className="bc-info-cell">
@@ -182,21 +148,21 @@ export default function BookingSummaryCard({ booking, onEdit }) {
           <div className="bc-payment-grid">
             <div className="bc-pay-cell">
               <div className="bc-pay-label">Group Price (EUR)</div>
-              <div className="bc-pay-value">{booking.group_price_eur ? `${formatCurrency(booking.group_price_eur)} EUR` : '—'}</div>
+              <div className="bc-pay-value">{booking.group_price_eur ? `${fmtCurrency(booking.group_price_eur)} EUR` : '—'}</div>
               {booking.group_price_mad ? (
-                <div className="bc-pay-sub">{formatCurrency(booking.group_price_mad)} MAD</div>
+                <div className="bc-pay-sub">{fmtCurrency(booking.group_price_mad)} MAD</div>
               ) : null}
             </div>
             <div className="bc-pay-cell">
               <div className="bc-pay-label">Paid Amount</div>
-              <div className="bc-pay-value">{formatCurrency(booking.paid)} EUR</div>
+              <div className="bc-pay-value">{fmtCurrency(booking.paid)} EUR</div>
               {booking.unite_price_eur ? (
-                <div className="bc-pay-sub">Unit Price: {formatCurrency(booking.unite_price_eur)} EUR</div>
+                <div className="bc-pay-sub">Unit Price: {fmtCurrency(booking.unite_price_eur)} EUR</div>
               ) : null}
             </div>
             <div className="bc-pay-cell">
               <div className="bc-pay-label">Remaining Balance</div>
-              <div className={`bc-pay-value ${remainingClass}`}>{formatCurrency(remaining)} EUR</div>
+              <div className={`bc-pay-value ${remainingClass}`}>{fmtCurrency(remaining)} EUR</div>
               {remaining > 0 && <div className="bc-pay-sub bc-pay-sub--warning">Due before travel</div>}
               {remaining === 0 && <div className="bc-pay-sub bc-pay-sub--success">Paid in full</div>}
             </div>

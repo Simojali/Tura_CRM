@@ -278,7 +278,7 @@ textarea {
 }
 
 .btn-success:hover:not(:disabled) {
-  background: #219a52;
+  background: var(--color-primary-light);
 }
 
 .btn-outline {
@@ -297,7 +297,7 @@ textarea {
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #c0392b;
+  background: color-mix(in srgb, var(--color-danger) 85%, black);
 }
 
 .btn-icon {
@@ -381,18 +381,18 @@ tbody tr:hover {
 }
 
 .status-confirmed {
-  background: #d5f5e3;
-  color: #1a7a40;
+  background: color-mix(in srgb, var(--color-success) 20%, white);
+  color: color-mix(in srgb, var(--color-success) 80%, black);
 }
 
 .status-pending {
-  background: #fef3d0;
-  color: #a07c10;
+  background: color-mix(in srgb, var(--color-warning) 20%, white);
+  color: color-mix(in srgb, var(--color-warning) 70%, black);
 }
 
 .status-passed {
-  background: #e4e7ea;
-  color: #52606d;
+  background: color-mix(in srgb, var(--color-text-light) 20%, white);
+  color: var(--color-text-light);
 }
 
 /* ── Modal ── */
@@ -1006,10 +1006,10 @@ tbody tr:hover {
   letter-spacing: 0.3px;
 }
 
-.ref-cat-hotel    { background: #d4e6f1; color: #1a5276; }
-.ref-cat-transfer { background: #d5f5e3; color: #1e8449; }
-.ref-cat-activity { background: #fdebd0; color: #b7950b; }
-.ref-cat-transport{ background: #e8daef; color: #6c3483; }
+.ref-cat-hotel    { background: #d4e6f1; color: #1a5276; } /* info blue — no matching var */
+.ref-cat-transfer { background: color-mix(in srgb, var(--color-success) 20%, white); color: color-mix(in srgb, var(--color-success) 80%, black); }
+.ref-cat-activity { background: color-mix(in srgb, var(--color-warning) 20%, white); color: color-mix(in srgb, var(--color-warning) 70%, black); }
+.ref-cat-transport{ background: #e8daef; color: #6c3483; } /* purple — no matching var */
 
 /* Reference table tweaks */
 .ref-table td {

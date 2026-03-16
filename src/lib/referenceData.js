@@ -119,3 +119,16 @@ export const MOCK_REFERENCE_DATA = [
 export function getNextRefId() {
   return `ref-${_nextId++}`
 }
+
+export function loadReferenceData() {
+  try {
+    const stored = localStorage.getItem('reference_data')
+    return stored ? JSON.parse(stored) : MOCK_REFERENCE_DATA
+  } catch {
+    return MOCK_REFERENCE_DATA
+  }
+}
+
+export function saveReferenceData(items) {
+  localStorage.setItem('reference_data', JSON.stringify(items))
+}

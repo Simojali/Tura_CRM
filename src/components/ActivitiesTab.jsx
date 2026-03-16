@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
 import { fmtDate, fmtCost } from '../lib/formatters'
 
@@ -34,16 +34,19 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
     act.price_unit === 'per person' ? (act.price || 0) * guests : (act.price || 0)
 
   // ── Flat list: all activities across all days ─────────────────────────
-  const allActivities = itinerary.flatMap((row, rowIndex) =>
-    (row.activities || []).map((a, actIndex) => ({
-      ...a,
-      date: row.date,
-      day: row.day,
-      city: row.city,
-      rowIndex,
-      actIndex,
-    }))
-  ).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+  const allActivities = useMemo(() =>
+    itinerary.flatMap((row, rowIndex) =>
+      (row.activities || []).map((a, actIndex) => ({
+        ...a,
+        date: row.date,
+        day: row.day,
+        city: row.city,
+        rowIndex,
+        actIndex,
+      }))
+    ).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)),
+    [itinerary]
+  )
 
   // ── Handlers ──────────────────────────────────────────────────────────
   const updateActivity = (rowIndex, actIndex, changes) => {
@@ -81,6 +84,7 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
   }
 
   const deleteActivity = (item) => {
+    if (!window.confirm(`Delete activity "${item.name}"? This cannot be undone.`)) return
     const updated = itinerary.map((row, ri) => {
       if (ri !== item.rowIndex) return row
       return {

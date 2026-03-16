@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { generateReferenciaRuta } from '../lib/constants'
@@ -6,7 +6,7 @@ import { loadItinerary, computeTotals, computeDays } from '../lib/itineraryUtils
 import { MOCK_BOOKINGS } from '../lib/mockData'
 import NewBookingModal from '../components/NewBookingModal'
 import Toast from '../components/Toast'
-import { fmtCurrency, calcRemaining } from '../lib/formatters'
+import { fmtCurrency, calcRemaining, fmtDay, fmtMon, paymentBadge } from '../lib/formatters'
 
 const isSupabaseConfigured = !import.meta.env.VITE_SUPABASE_URL?.includes('your-project')
 
@@ -79,21 +79,6 @@ const CameraIcon = () => (
 
 const ACTIVITY_ICONS = [MountainIcon, WaveIcon, BusIcon, CameraIcon]
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const getPaymentBadge = (b) => {
-  if (b.reserv_status === 'Cancelled') return { label: 'Cancelled', cls: 'bk-badge bk-badge-cancelled' }
-  if (b.reserv_status === 'Passed')    return { label: 'Passed',    cls: 'bk-badge bk-badge-passed' }
-  const total = Number(b.group_price_eur) || 0
-  const paid  = Number(b.paid) || 0
-  if (total === 0)    return { label: 'No price',       cls: 'bk-badge bk-badge-passed' }
-  if (paid >= total)  return { label: 'Full paid',      cls: 'bk-badge bk-badge-full' }
-  if (paid > 0)       return { label: 'Partially paid', cls: 'bk-badge bk-badge-partial' }
-  return                     { label: 'Not paid',       cls: 'bk-badge bk-badge-notpaid' }
-}
-
-const fmtDay = (d) => d ? new Date(d).getDate() : '—'
-const fmtMon = (d) => d ? new Date(d).toLocaleDateString('en-GB', { month: 'short' }) : ''
-
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [bookings,    setBookings]    = useState([])
@@ -105,6 +90,16 @@ export default function Dashboard() {
   const [noteText,    setNoteText]    = useState('')
   const [noteSaving,  setNoteSaving]  = useState(false)
   const navigate = useNavigate()
+
+  // Pre-compute cost/person for all bookings once (avoids localStorage reads on every render)
+  const costMap = useMemo(() => {
+    const map = {}
+    bookings.forEach((b) => {
+      const itin = loadItinerary(b.id) || []
+      map[b.id] = computeTotals(itin, b).costPerPerson
+    })
+    return map
+  }, [bookings])
 
   // Close all menus on outside click
   useEffect(() => {
@@ -212,11 +207,10 @@ export default function Dashboard() {
           <div className="loading">No bookings yet. Click "+ New Booking" to get started.</div>
         ) : (
           bookings.map((b) => {
-            const badge     = getPaymentBadge(b)
-            const remaining = calcRemaining(b)
-            const isZero    = remaining <= 0
-            const itinerary = loadItinerary(b.id) || []
-            const { costPerPerson } = computeTotals(itinerary, b)
+            const badge        = paymentBadge(b)
+            const remaining    = calcRemaining(b)
+            const isZero       = remaining <= 0
+            const costPerPerson = costMap[b.id] || 0
 
             return (
               <div key={b.id} className="bk-card" style={{ zIndex: (noteOpen === b.id || menuOpen === b.id) ? 10 : 'auto' }} onClick={() => navigate(`/bookings/${b.id}`)}>

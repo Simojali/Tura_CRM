@@ -61,3 +61,69 @@ export function nextDay(dateStr) {
 export function calcRemaining(booking) {
   return (Number(booking.group_price_eur) || 0) - (Number(booking.paid) || 0)
 }
+
+/**
+ * Format an ISO date string to a long display string including year.
+ * e.g. '2025-06-10' → '10 Jun 2025'
+ */
+export function fmtDateLong(dateStr) {
+  if (!dateStr) return ''
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+/**
+ * Extract the day-of-month number from an ISO date string.
+ * e.g. '2025-06-10' → 10  (returns '—' if falsy)
+ */
+export function fmtDay(dateStr) {
+  if (!dateStr) return '—'
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d).getDate()
+}
+
+/**
+ * Extract the short month abbreviation (uppercase) from an ISO date string.
+ * e.g. '2025-06-10' → 'JUN'  (returns '' if falsy)
+ */
+export function fmtMon(dateStr) {
+  if (!dateStr) return ''
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { month: 'short' }).toUpperCase()
+}
+
+/**
+ * Return the CSS class for a booking status string.
+ * e.g. 'Confirmed' → 'status-confirmed'
+ */
+export function statusClass(status) {
+  switch (status) {
+    case 'Confirmed': return 'status-confirmed'
+    case 'Pending':   return 'status-pending'
+    case 'Passed':    return 'status-passed'
+    default:          return ''
+  }
+}
+
+/**
+ * Capitalize a status string (used for itinerary item statuses like 'requested' → 'Requested').
+ */
+export function statusLabel(s) {
+  const str = s || 'requested'
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+/**
+ * Return the payment badge label and CSS class for a booking.
+ * e.g. { label: 'Partially paid', cls: 'bk-badge bk-badge-partial' }
+ */
+export function paymentBadge(booking) {
+  if (booking.reserv_status === 'Cancelled') return { label: 'Cancelled', cls: 'bk-badge bk-badge-cancelled' }
+  if (booking.reserv_status === 'Passed')    return { label: 'Passed',    cls: 'bk-badge bk-badge-passed' }
+  const total = Number(booking.group_price_eur) || 0
+  const paid  = Number(booking.paid) || 0
+  if (total === 0)    return { label: 'No price',       cls: 'bk-badge bk-badge-passed' }
+  if (paid >= total)  return { label: 'Full paid',      cls: 'bk-badge bk-badge-full' }
+  if (paid > 0)       return { label: 'Partially paid', cls: 'bk-badge bk-badge-partial' }
+  return                     { label: 'Not paid',       cls: 'bk-badge bk-badge-notpaid' }
+}

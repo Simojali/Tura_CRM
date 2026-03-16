@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
 import { fmtDate, fmtCost, fmtRooms, nextDay } from '../lib/formatters'
+import { HOTEL_STATUS_LABELS as STATUS_LABELS } from '../lib/constants'
 
 const HOTEL_STATUSES = [
   { value: 'all',       label: 'All' },
@@ -8,12 +9,6 @@ const HOTEL_STATUSES = [
   { value: 'confirmed', label: 'Confirmed' },
   { value: 'cancelled', label: 'Cancelled' },
 ]
-
-const STATUS_LABELS = {
-  requested: 'Requested',
-  confirmed: 'Confirmed',
-  cancelled: 'Cancelled',
-}
 
 const hotels = MOCK_REFERENCE_DATA.filter((r) => r.category === 'hotel')
 
@@ -59,18 +54,27 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   const resolveCheckout = (item) => item.hotel_checkout || getAutoCheckout(item.rowIndex)
 
   // ── Flat list: days that have a hotel ─────────────────────────────────
-  const hotelRows = itinerary
-    .map((row, rowIndex) => ({ ...row, rowIndex }))
-    .filter((row) => row.hotel_id)
+  const hotelRows = useMemo(() =>
+    itinerary
+      .map((row, rowIndex) => ({ ...row, rowIndex }))
+      .filter((row) => row.hotel_id),
+    [itinerary]
+  )
 
-  const filtered = filterStatus === 'all'
-    ? hotelRows
-    : hotelRows.filter((row) => (row.hotel_status || 'requested') === filterStatus)
+  const filtered = useMemo(() =>
+    filterStatus === 'all'
+      ? hotelRows
+      : hotelRows.filter((row) => (row.hotel_status || 'requested') === filterStatus),
+    [hotelRows, filterStatus]
+  )
 
   // Days without a hotel (for Add form day picker)
-  const availableDays = itinerary
-    .map((row, i) => ({ i, row }))
-    .filter(({ row }) => !row.hotel_id)
+  const availableDays = useMemo(() =>
+    itinerary
+      .map((row, i) => ({ i, row }))
+      .filter(({ row }) => !row.hotel_id),
+    [itinerary]
+  )
 
   // ── Update a hotel row ────────────────────────────────────────────────
   const updateHotel = (rowIndex, changes) => {
@@ -84,6 +88,10 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   const addHotel = () => {
     const { dayIdx, hotelId, status, confirmRef, checkin, checkout } = addForm
     if (dayIdx === '' || !hotelId) return
+    if (checkin && checkout && checkout <= checkin) {
+      alert('Check-out date must be after check-in date.')
+      return
+    }
     const hotel = hotels.find((h) => h.id === hotelId)
     if (!hotel) return
     const cost = calcHotelCost(hotel)
@@ -112,6 +120,7 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   }
 
   const deleteHotel = (item) => {
+    if (!window.confirm(`Remove hotel "${item.hotel_name}" from Day ${item.day}? This cannot be undone.`)) return
     updateHotel(item.rowIndex, {
       hotel_id: null, hotel_name: null, hotel_tier: null, hotel_cost: 0,
       hotel_status: undefined, hotel_confirmation_ref: '',
@@ -135,6 +144,10 @@ export default function HotelsTab({ booking, itinerary, onSave }) {
   }
 
   const saveEdit = (item) => {
+    if (editForm.hotel_checkin && editForm.hotel_checkout && editForm.hotel_checkout <= editForm.hotel_checkin) {
+      alert('Check-out date must be after check-in date.')
+      return
+    }
     const hotel = hotels.find((h) => h.id === editForm.hotelId)
     const changes = {
       hotel_status: editForm.hotel_status,

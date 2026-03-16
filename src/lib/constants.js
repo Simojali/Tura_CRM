@@ -6,15 +6,12 @@ export const PROVEEDORES = [
   'Voyage priver',
   'Me pone viajar Ricardo',
   'Vivir Viajando',
-  'Recommendation',
   'Others',
   'Orient Tours',
-  'Fack reservations',
   'Savoire Journy Nuria',
   'Pasa el mundo',
   'Branque Experience',
   'Houda viajes',
-  'jesus black',
 ]
 
 export const HOTEL_TYPES = [
@@ -26,6 +23,19 @@ export const HOTEL_TYPES = [
 ]
 
 export const RESERV_STATUSES = ['Confirmed', 'Pending', 'Passed']
+
+export const HOTEL_STATUS_LABELS = {
+  requested: 'Requested',
+  confirmed: 'Confirmed',
+  cancelled: 'Cancelled',
+}
+
+export const TRANSFER_STATUS_LABELS = {
+  requested: 'Requested',
+  confirmed: 'Confirmed',
+  done:      'Done',
+  cancelled: 'Cancelled',
+}
 
 export const CLIENT_TYPES = [
   { value: 'direct',    label: 'Direct (B2C)',        markup: 35 },

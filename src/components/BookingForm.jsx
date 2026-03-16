@@ -48,6 +48,12 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const total = Number(form.group_price_eur) || 0
+    const paid  = Number(form.paid) || 0
+    if (paid > total && total > 0) {
+      alert('Paid amount cannot exceed the total group price.')
+      return
+    }
     setSaving(true)
     try {
       await onSubmit(form)

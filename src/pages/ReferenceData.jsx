@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { MOCK_REFERENCE_DATA, getNextRefId, CITIES, TIERS } from '../lib/referenceData'
+import { getNextRefId, CITIES, TIERS, loadReferenceData, saveReferenceData } from '../lib/referenceData'
 import ReferenceItemModal from '../components/ReferenceItemModal'
 import Toast from '../components/Toast'
 
@@ -21,7 +21,7 @@ const CATEGORY_LABELS = {
 
 export default function ReferenceData() {
   const [searchParams] = useSearchParams()
-  const [items, setItems] = useState(MOCK_REFERENCE_DATA)
+  const [items, setItems] = useState(() => loadReferenceData())
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'all')
   const [search, setSearch] = useState('')
   const [cityFilter, setCityFilter] = useState('')
@@ -89,14 +89,20 @@ export default function ReferenceData() {
   const handleSave = (data) => {
     if (modalItem && modalItem.id) {
       // Edit
-      setItems((prev) =>
-        prev.map((i) => (i.id === modalItem.id ? { ...i, ...data } : i))
-      )
+      setItems((prev) => {
+        const next = prev.map((i) => (i.id === modalItem.id ? { ...i, ...data } : i))
+        saveReferenceData(next)
+        return next
+      })
       setToast({ message: 'Item updated', type: 'success' })
     } else {
       // Add
       const newItem = { id: getNextRefId(), ...data }
-      setItems((prev) => [...prev, newItem])
+      setItems((prev) => {
+        const next = [...prev, newItem]
+        saveReferenceData(next)
+        return next
+      })
       setToast({ message: 'Item added', type: 'success' })
     }
     setModalItem(null)
@@ -107,7 +113,11 @@ export default function ReferenceData() {
   }
 
   const confirmDelete = () => {
-    setItems((prev) => prev.filter((i) => i.id !== deleteConfirm.id))
+    setItems((prev) => {
+      const next = prev.filter((i) => i.id !== deleteConfirm.id)
+      saveReferenceData(next)
+      return next
+    })
     setToast({ message: 'Item deleted', type: 'success' })
     setDeleteConfirm(null)
   }

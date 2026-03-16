@@ -1,7 +1,7 @@
 import { CITIES } from '../lib/referenceData'
 import { computeDayCost } from '../lib/itineraryUtils'
 import CostCalculations from './CostCalculations'
-import { fmtDate, fmtCost, fmtRooms, nextDay } from '../lib/formatters'
+import { fmtDate, fmtDateLong, fmtCost, fmtRooms, nextDay, statusLabel } from '../lib/formatters'
 
 export default function TripOverview({ booking, itinerary, onSave }) {
 
@@ -59,18 +59,6 @@ export default function TripOverview({ booking, itinerary, onSave }) {
     return nextDay(itinerary[rowIndex]?.date) || ''
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────
-  const fmtLong = (dateStr) => {
-    if (!dateStr) return ''
-    const [y, m, d] = dateStr.split('-').map(Number)
-    return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  }
-
-  const statusLabel = (s) => {
-    const str = s || 'requested'
-    return str.charAt(0).toUpperCase() + str.slice(1)
-  }
-
   // ── Render ────────────────────────────────────────────────────────────
   return (
     <div className="trip-overview">
@@ -93,7 +81,7 @@ export default function TripOverview({ booking, itinerary, onSave }) {
                 <div className="to-day-header">
                   <div className="to-day-header-left">
                     <span className="to-day-label">Day {row.day}</span>
-                    <span className="to-day-date">{fmtLong(row.date)}</span>
+                    <span className="to-day-date">{fmtDateLong(row.date)}</span>
                     <select
                       className="itin-city-select"
                       value={row.city}

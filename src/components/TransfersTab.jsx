@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
 import { fmtDate, fmtCost } from '../lib/formatters'
+import { TRANSFER_STATUS_LABELS as STATUS_LABELS } from '../lib/constants'
 
 const refTransfers = MOCK_REFERENCE_DATA.filter((r) => r.category === 'transfer')
 const refTransports = MOCK_REFERENCE_DATA.filter((r) => r.category === 'transport')
@@ -12,13 +13,6 @@ const STATUSES = [
   { value: 'done',       label: 'Done' },
   { value: 'cancelled',  label: 'Cancelled' },
 ]
-
-const STATUS_LABELS = {
-  requested: 'Requested',
-  confirmed: 'Confirmed',
-  done: 'Done',
-  cancelled: 'Cancelled',
-}
 
 const EMPTY_ADD_FORM = {
   dayIdx: '', transferId: '', time: '09:00',
@@ -42,20 +36,26 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
   }, [])
 
   // ── Flat list: aggregate transfers from all days ──────────────────────
-  const allTransfers = itinerary.flatMap((row, dayIndex) =>
-    (row.transfers || []).map((t, transferIndex) => ({
-      ...t,
-      date: row.date,
-      day: row.day,
-      city: row.city,
-      dayIndex,
-      transferIndex,
-    }))
-  ).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+  const allTransfers = useMemo(() =>
+    itinerary.flatMap((row, dayIndex) =>
+      (row.transfers || []).map((t, transferIndex) => ({
+        ...t,
+        date: row.date,
+        day: row.day,
+        city: row.city,
+        dayIndex,
+        transferIndex,
+      }))
+    ).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)),
+    [itinerary]
+  )
 
-  const filtered = filterStatus === 'all'
-    ? allTransfers
-    : allTransfers.filter((t) => (t.status || 'requested') === filterStatus)
+  const filtered = useMemo(() =>
+    filterStatus === 'all'
+      ? allTransfers
+      : allTransfers.filter((t) => (t.status || 'requested') === filterStatus),
+    [allTransfers, filterStatus]
+  )
 
   // ── Update a transfer item in the itinerary ───────────────────────────
   const updateTransfer = (dayIndex, transferIndex, changes) => {
@@ -77,7 +77,8 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
     setOpenMenuIdx(null)
   }
 
-  const deleteTransfer = (dayIndex, transferIndex) => {
+  const deleteTransfer = (dayIndex, transferIndex, transferName) => {
+    if (!window.confirm(`Delete transfer "${transferName || 'this transfer'}"? This cannot be undone.`)) return
     const updated = itinerary.map((row, ri) => {
       if (ri !== dayIndex) return row
       return {
@@ -437,7 +438,7 @@ export default function TransfersTab({ booking, itinerary, onSave }) {
                       )}
                       <button
                         className="tr-menu-item danger"
-                        onClick={() => deleteTransfer(item.dayIndex, item.transferIndex)}
+                        onClick={() => deleteTransfer(item.dayIndex, item.transferIndex, item.name)}
                       >
                         🗑️ Delete
                       </button>
