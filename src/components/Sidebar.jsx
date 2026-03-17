@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppContext } from '../lib/AppContext'
 import { loadReferenceData } from '../lib/referenceData'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const IconList = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -48,7 +49,12 @@ const IconTransport = () => (
 export default function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { bookingCount } = useAppContext()
+  const { bookingCount, session } = useAppContext()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate('/login', { replace: true })
+  }
   const [refCounts, setRefCounts] = useState({ hotel: 0, transfer: 0, activity: 0, transport: 0 })
 
   useEffect(() => {
@@ -131,6 +137,19 @@ export default function Sidebar() {
           <span className="sidebar-badge">{refCounts.transport}</span>
         </button>
       </nav>
+
+      {isSupabaseConfigured && session && (
+        <div className="sidebar-footer">
+          <button className="sidebar-logout" onClick={handleLogout}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Sign out
+          </button>
+        </div>
+      )}
     </aside>
   )
 }
