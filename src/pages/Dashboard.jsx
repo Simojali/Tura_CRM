@@ -1,14 +1,13 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { generateReferenciaRuta } from '../lib/constants'
 import { loadItinerary, computeTotals, computeDays } from '../lib/itineraryUtils'
 import { MOCK_BOOKINGS } from '../lib/mockData'
+import { useAppContext } from '../lib/AppContext'
 import NewBookingModal from '../components/NewBookingModal'
 import Toast from '../components/Toast'
 import { fmtCurrency, calcRemaining, fmtDay, fmtMon, paymentBadge } from '../lib/formatters'
-
-const isSupabaseConfigured = !import.meta.env.VITE_SUPABASE_URL?.includes('your-project')
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const PeopleIcon = () => (
@@ -90,15 +89,21 @@ export default function Dashboard() {
   const [noteText,    setNoteText]    = useState('')
   const [noteSaving,  setNoteSaving]  = useState(false)
   const navigate = useNavigate()
+  const { setBookingCount } = useAppContext()
 
-  // Pre-compute cost/person for all bookings once (avoids localStorage reads on every render)
-  const costMap = useMemo(() => {
-    const map = {}
-    bookings.forEach((b) => {
-      const itin = loadItinerary(b.id) || []
-      map[b.id] = computeTotals(itin, b).costPerPerson
-    })
-    return map
+  // Pre-compute cost/person for all bookings (async — itinerary now comes from Supabase)
+  const [costMap, setCostMap] = useState({})
+  useEffect(() => {
+    if (!bookings.length) return
+    async function buildCostMap() {
+      const map = {}
+      for (const b of bookings) {
+        const itin = (await loadItinerary(b.id)) || []
+        map[b.id] = computeTotals(itin, b).costPerPerson
+      }
+      setCostMap(map)
+    }
+    buildCostMap()
   }, [bookings])
 
   // Close all menus on outside click
@@ -112,6 +117,7 @@ export default function Dashboard() {
     setLoading(true)
     if (!isSupabaseConfigured) {
       setBookings(MOCK_BOOKINGS)
+      setBookingCount(MOCK_BOOKINGS.length)
       setLoading(false)
       return
     }
@@ -123,9 +129,10 @@ export default function Dashboard() {
       setToast({ message: 'Error loading bookings', type: 'error' })
     } else {
       setBookings(data || [])
+      setBookingCount(data?.length || 0)
     }
     setLoading(false)
-  }, [])
+  }, [setBookingCount])
 
   useEffect(() => { fetchBookings() }, [fetchBookings])
 

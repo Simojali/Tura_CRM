@@ -1,13 +1,7 @@
+import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { MOCK_BOOKINGS } from '../lib/mockData'
-import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
-
-const refCounts = {
-  hotel: MOCK_REFERENCE_DATA.filter((i) => i.category === 'hotel').length,
-  transfer: MOCK_REFERENCE_DATA.filter((i) => i.category === 'transfer').length,
-  activity: MOCK_REFERENCE_DATA.filter((i) => i.category === 'activity').length,
-  transport: MOCK_REFERENCE_DATA.filter((i) => i.category === 'transport').length,
-}
+import { useAppContext } from '../lib/AppContext'
+import { loadReferenceData } from '../lib/referenceData'
 
 const IconList = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -54,6 +48,19 @@ const IconTransport = () => (
 export default function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { bookingCount } = useAppContext()
+  const [refCounts, setRefCounts] = useState({ hotel: 0, transfer: 0, activity: 0, transport: 0 })
+
+  useEffect(() => {
+    loadReferenceData().then((items) => {
+      setRefCounts({
+        hotel:     items.filter((i) => i.category === 'hotel').length,
+        transfer:  items.filter((i) => i.category === 'transfer').length,
+        activity:  items.filter((i) => i.category === 'activity').length,
+        transport: items.filter((i) => i.category === 'transport').length,
+      })
+    })
+  }, [])
 
   const search = new URLSearchParams(location.search)
   const currentTab = search.get('tab') || ''
@@ -81,7 +88,7 @@ export default function Sidebar() {
         >
           <IconList />
           All Bookings
-          <span className="sidebar-badge">{MOCK_BOOKINGS.length}</span>
+          <span className="sidebar-badge">{bookingCount}</span>
         </button>
 
         <div className="sidebar-section-label" style={{ marginTop: '0.5rem' }}>

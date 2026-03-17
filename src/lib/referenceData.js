@@ -1,3 +1,5 @@
+import { supabase, isSupabaseConfigured } from './supabase'
+
 // Categories & subcategories for the Reference Data Bank
 export const REF_CATEGORIES = ['hotel', 'transfer', 'activity', 'transport']
 
@@ -120,7 +122,14 @@ export function getNextRefId() {
   return `ref-${_nextId++}`
 }
 
-export function loadReferenceData() {
+export async function loadReferenceData() {
+  if (isSupabaseConfigured) {
+    const { data } = await supabase
+      .from('reference_items')
+      .select('*')
+      .order('category')
+    return data?.length ? data : MOCK_REFERENCE_DATA
+  }
   try {
     const stored = localStorage.getItem('reference_data')
     return stored ? JSON.parse(stored) : MOCK_REFERENCE_DATA
@@ -129,6 +138,10 @@ export function loadReferenceData() {
   }
 }
 
-export function saveReferenceData(items) {
+export async function saveReferenceData(items) {
+  if (isSupabaseConfigured) {
+    await supabase.from('reference_items').upsert(items)
+    return
+  }
   localStorage.setItem('reference_data', JSON.stringify(items))
 }

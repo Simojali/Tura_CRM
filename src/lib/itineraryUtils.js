@@ -1,4 +1,5 @@
 import { CLIENT_TYPES } from './constants'
+import { supabase, isSupabaseConfigured } from './supabase'
 
 /**
  * Compute the number of days for a booking (inclusive: check-in day + check-out day).
@@ -65,8 +66,16 @@ export function reconcileItinerary(saved, booking) {
   return saved.slice(0, expected.length)
 }
 
-/** Read saved itinerary from localStorage. Returns null if none stored yet. */
-export function loadItinerary(bookingId) {
+/** Read saved itinerary from Supabase (or localStorage in mock mode). Returns null if none stored yet. */
+export async function loadItinerary(bookingId) {
+  if (isSupabaseConfigured) {
+    const { data } = await supabase
+      .from('itinerary_rows')
+      .select('rows')
+      .eq('booking_id', bookingId)
+      .single()
+    return data?.rows ?? null
+  }
   try {
     const stored = localStorage.getItem(`itinerary_${bookingId}`)
     return stored ? JSON.parse(stored) : null
@@ -75,8 +84,14 @@ export function loadItinerary(bookingId) {
   }
 }
 
-/** Persist itinerary rows to localStorage. */
-export function saveItinerary(bookingId, rows) {
+/** Persist itinerary rows to Supabase (or localStorage in mock mode). */
+export async function saveItinerary(bookingId, rows) {
+  if (isSupabaseConfigured) {
+    await supabase
+      .from('itinerary_rows')
+      .upsert({ booking_id: bookingId, rows, updated_at: new Date().toISOString() })
+    return
+  }
   localStorage.setItem(`itinerary_${bookingId}`, JSON.stringify(rows))
 }
 

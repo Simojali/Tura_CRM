@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { MOCK_BOOKINGS } from '../lib/mockData'
 import { loadItinerary, saveItinerary, initItinerary, reconcileItinerary, computeDays } from '../lib/itineraryUtils'
 import BookingSummaryCard from '../components/BookingSummaryCard'
@@ -10,8 +10,6 @@ import TransfersTab from '../components/TransfersTab'
 import HotelsTab from '../components/HotelsTab'
 import ActivitiesTab from '../components/ActivitiesTab'
 import Toast from '../components/Toast'
-
-const isSupabaseConfigured = !import.meta.env.VITE_SUPABASE_URL?.includes('your-project')
 
 const normalizeBooking = (data) => ({
   ...data,
@@ -97,7 +95,7 @@ export default function BookingDetail() {
       const b = found ? normalizeBooking(found) : null
       setBooking(b)
       if (b) {
-        const saved = loadItinerary(id)
+        const saved = await loadItinerary(id)
         setItinerary(reconcileItinerary(saved, b))
       }
       setLoading(false)
@@ -116,7 +114,7 @@ export default function BookingDetail() {
     } else {
       const b = normalizeBooking(data)
       setBooking(b)
-      const saved = loadItinerary(id)
+      const saved = await loadItinerary(id)
       setItinerary(saved || initItinerary(b))
     }
     setLoading(false)
@@ -127,9 +125,9 @@ export default function BookingDetail() {
   }, [fetchBooking])
 
   // ── Shared itinerary save handler ──
-  const handleItinerarySave = (rows) => {
+  const handleItinerarySave = async (rows) => {
     setItinerary(rows)
-    saveItinerary(id, rows)
+    await saveItinerary(id, rows)
     setToast({ message: 'Itinerary saved', type: 'success' })
   }
 
@@ -137,7 +135,7 @@ export default function BookingDetail() {
     if (!isSupabaseConfigured) {
       const b = normalizeBooking({ ...booking, ...formData })
       setBooking(b)
-      const saved = loadItinerary(id)
+      const saved = await loadItinerary(id)
       setItinerary(reconcileItinerary(saved, b))
       setShowEditModal(false)
       setToast({ message: 'Booking updated successfully', type: 'success' })

@@ -20,7 +20,7 @@ const EMPTY_ADD_FORM = {
   fromLocation: '', toLocation: '',
 }
 
-export default function TransfersTab({ booking, itinerary, onSave }) {
+export default function TransfersTab({ booking: _booking, itinerary, onSave }) {
   const [filterStatus, setFilterStatus] = useState('all')
   const [openMenuIdx, setOpenMenuIdx] = useState(null)
   const [editingIdx, setEditingIdx] = useState(null)

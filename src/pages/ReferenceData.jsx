@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { getNextRefId, CITIES, TIERS, loadReferenceData, saveReferenceData } from '../lib/referenceData'
 import ReferenceItemModal from '../components/ReferenceItemModal'
 import Toast from '../components/Toast'
@@ -21,7 +22,7 @@ const CATEGORY_LABELS = {
 
 export default function ReferenceData() {
   const [searchParams] = useSearchParams()
-  const [items, setItems] = useState(() => loadReferenceData())
+  const [items, setItems] = useState([])
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'all')
   const [search, setSearch] = useState('')
   const [cityFilter, setCityFilter] = useState('')
@@ -29,6 +30,9 @@ export default function ReferenceData() {
   const [modalItem, setModalItem] = useState(null) // null = closed, {} = new, {id,...} = edit
   const [toast, setToast] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+
+  // Load reference data on mount
+  useEffect(() => { loadReferenceData().then(setItems) }, [])
 
   // Sync tab when sidebar link changes the URL
   useEffect(() => {
@@ -86,23 +90,19 @@ export default function ReferenceData() {
 
   const showTierFilter = activeTab === 'all' || activeTab === 'hotel'
 
-  const handleSave = (data) => {
+  const handleSave = async (data) => {
     if (modalItem && modalItem.id) {
       // Edit
-      setItems((prev) => {
-        const next = prev.map((i) => (i.id === modalItem.id ? { ...i, ...data } : i))
-        saveReferenceData(next)
-        return next
-      })
+      const next = items.map((i) => (i.id === modalItem.id ? { ...i, ...data } : i))
+      await saveReferenceData(next)
+      setItems(next)
       setToast({ message: 'Item updated', type: 'success' })
     } else {
       // Add
       const newItem = { id: getNextRefId(), ...data }
-      setItems((prev) => {
-        const next = [...prev, newItem]
-        saveReferenceData(next)
-        return next
-      })
+      const next = [...items, newItem]
+      await saveReferenceData(next)
+      setItems(next)
       setToast({ message: 'Item added', type: 'success' })
     }
     setModalItem(null)
@@ -112,12 +112,14 @@ export default function ReferenceData() {
     setDeleteConfirm(item)
   }
 
-  const confirmDelete = () => {
-    setItems((prev) => {
-      const next = prev.filter((i) => i.id !== deleteConfirm.id)
-      saveReferenceData(next)
-      return next
-    })
+  const confirmDelete = async () => {
+    const deletingId = deleteConfirm.id
+    if (isSupabaseConfigured) {
+      await supabase.from('reference_items').delete().eq('id', deletingId)
+    }
+    const next = items.filter((i) => i.id !== deletingId)
+    if (!isSupabaseConfigured) await saveReferenceData(next)
+    setItems(next)
     setToast({ message: 'Item deleted', type: 'success' })
     setDeleteConfirm(null)
   }
