@@ -17,43 +17,43 @@ export const CITIES = [
 ]
 
 export const TIERS = [
-  { value: 'Basico', label: 'Basico (4a)' },
-  { value: 'Superior', label: 'Superior (3a)' },
-  { value: 'Superior Plus', label: 'Superior Plus (2a)' },
-  { value: 'Superior Lujo', label: 'Superior Lujo (1a)' },
-  { value: 'Lujo', label: 'Lujo' },
+  { value: 'Basic', label: 'Basic (4-star)' },
+  { value: 'Superior', label: 'Superior (3-star)' },
+  { value: 'Superior Plus', label: 'Superior Plus (2-star)' },
+  { value: 'Superior Luxury', label: 'Superior Luxury (1-star)' },
+  { value: 'Luxury', label: 'Luxury' },
 ]
 
 let _nextId = 100
 
 export const MOCK_REFERENCE_DATA = [
   // ─── HOTELS: Marrakech ───
-  { id: 'ref-1',  category: 'hotel', subcategory: 'Riad',         name: 'Riad Kniza',              city: 'Marrakech', tier: 'Superior Lujo', price_single: 80,  price_double: 95,  price_triple: 120, price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-1',  category: 'hotel', subcategory: 'Riad',         name: 'Riad Kniza',              city: 'Marrakech', tier: 'Superior Luxury', price_single: 80,  price_double: 95,  price_triple: 120, price: null, price_unit: 'per night', pax_label: null, notes: null },
   { id: 'ref-2',  category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Kenzi Menara',       city: 'Marrakech', tier: 'Superior',      price_single: 45,  price_double: 55,  price_triple: 75,  price: null, price_unit: 'per night', pax_label: null, notes: null },
   { id: 'ref-3',  category: 'hotel', subcategory: 'Riad',         name: 'Riad Dar Anika',           city: 'Marrakech', tier: 'Superior Plus', price_single: 65,  price_double: 75,  price_triple: 100, price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-4',  category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Islane',             city: 'Marrakech', tier: 'Basico',        price_single: 25,  price_double: 30,  price_triple: 40,  price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-5',  category: 'hotel', subcategory: 'Hotel',        name: 'La Mamounia',              city: 'Marrakech', tier: 'Lujo',          price_single: 240, price_double: 280, price_triple: 380, price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-4',  category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Islane',             city: 'Marrakech', tier: 'Basic',        price_single: 25,  price_double: 30,  price_triple: 40,  price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-5',  category: 'hotel', subcategory: 'Hotel',        name: 'La Mamounia',              city: 'Marrakech', tier: 'Luxury',          price_single: 240, price_double: 280, price_triple: 380, price: null, price_unit: 'per night', pax_label: null, notes: null },
 
   // ─── HOTELS: Fes ───
-  { id: 'ref-6',  category: 'hotel', subcategory: 'Riad',         name: 'Riad Fes',                city: 'Fes',       tier: 'Superior Lujo', price_single: 90,  price_double: 110, price_triple: 145, price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-6',  category: 'hotel', subcategory: 'Riad',         name: 'Riad Fes',                city: 'Fes',       tier: 'Superior Luxury', price_single: 90,  price_double: 110, price_triple: 145, price: null, price_unit: 'per night', pax_label: null, notes: null },
   { id: 'ref-7',  category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Sahrai',             city: 'Fes',       tier: 'Superior Plus', price_single: 65,  price_double: 80,  price_triple: 105, price: null, price_unit: 'per night', pax_label: null, notes: null },
   { id: 'ref-8',  category: 'hotel', subcategory: 'Riad',         name: 'Riad Laaroussa',           city: 'Fes',       tier: 'Superior',      price_single: 40,  price_double: 50,  price_triple: 65,  price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-9',  category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Batha',              city: 'Fes',       tier: 'Basico',        price_single: 22,  price_double: 28,  price_triple: 38,  price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-9',  category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Batha',              city: 'Fes',       tier: 'Basic',        price_single: 22,  price_double: 28,  price_triple: 38,  price: null, price_unit: 'per night', pax_label: null, notes: null },
 
   // ─── HOTELS: Merzouga ───
-  { id: 'ref-10', category: 'hotel', subcategory: 'Desert Camp',  name: 'Luxury Desert Camp Erg Chebbi', city: 'Merzouga', tier: 'Lujo',     price_single: 120, price_double: 150, price_triple: 200, price: null, price_unit: 'per night', pax_label: null, notes: 'Full board included' },
-  { id: 'ref-11', category: 'hotel', subcategory: 'Desert Camp',  name: 'Standard Desert Camp',     city: 'Merzouga', tier: 'Basico',        price_single: 28,  price_double: 35,  price_triple: 48,  price: null, price_unit: 'per night', pax_label: null, notes: 'Dinner & breakfast included' },
+  { id: 'ref-10', category: 'hotel', subcategory: 'Desert Camp',  name: 'Luxury Desert Camp Erg Chebbi', city: 'Merzouga', tier: 'Luxury',     price_single: 120, price_double: 150, price_triple: 200, price: null, price_unit: 'per night', pax_label: null, notes: 'Full board included' },
+  { id: 'ref-11', category: 'hotel', subcategory: 'Desert Camp',  name: 'Standard Desert Camp',     city: 'Merzouga', tier: 'Basic',        price_single: 28,  price_double: 35,  price_triple: 48,  price: null, price_unit: 'per night', pax_label: null, notes: 'Dinner & breakfast included' },
   { id: 'ref-12', category: 'hotel', subcategory: 'Desert Camp',  name: 'Premium Desert Camp',      city: 'Merzouga', tier: 'Superior Plus', price_single: 75,  price_double: 90,  price_triple: 120, price: null, price_unit: 'per night', pax_label: null, notes: 'Full board, private tent' },
   { id: 'ref-13', category: 'hotel', subcategory: 'Hotel',        name: 'Kasbah Tombouctou',        city: 'Merzouga', tier: 'Superior',      price_single: 36,  price_double: 45,  price_triple: 58,  price: null, price_unit: 'per night', pax_label: null, notes: null },
 
   // ─── HOTELS: Essaouira ───
   { id: 'ref-14', category: 'hotel', subcategory: 'Riad',         name: 'Riad Baladin',             city: 'Essaouira', tier: 'Superior',     price_single: 40,  price_double: 50,  price_triple: 65,  price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-15', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Atlas Essaouira',    city: 'Essaouira', tier: 'Basico',        price_single: 25,  price_double: 32,  price_triple: 42,  price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-16', category: 'hotel', subcategory: 'Hotel',        name: 'Heure Bleue Palais',       city: 'Essaouira', tier: 'Superior Lujo', price_single: 100, price_double: 120, price_triple: 160, price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-15', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Atlas Essaouira',    city: 'Essaouira', tier: 'Basic',        price_single: 25,  price_double: 32,  price_triple: 42,  price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-16', category: 'hotel', subcategory: 'Hotel',        name: 'Heure Bleue Palais',       city: 'Essaouira', tier: 'Superior Luxury', price_single: 100, price_double: 120, price_triple: 160, price: null, price_unit: 'per night', pax_label: null, notes: null },
 
   // ─── HOTELS: Ouarzazate ───
   { id: 'ref-17', category: 'hotel', subcategory: 'Hotel',        name: 'Le Berbere Palace',        city: 'Ouarzazate', tier: 'Superior Plus', price_single: 55, price_double: 70, price_triple: 92,  price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-18', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Azoul',              city: 'Ouarzazate', tier: 'Basico',        price_single: 20, price_double: 25, price_triple: 33,  price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-18', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Azoul',              city: 'Ouarzazate', tier: 'Basic',        price_single: 20, price_double: 25, price_triple: 33,  price: null, price_unit: 'per night', pax_label: null, notes: null },
 
   // ─── HOTELS: Chefchaouen ───
   { id: 'ref-19', category: 'hotel', subcategory: 'Riad',         name: 'Casa Hassan',              city: 'Chefchaouen', tier: 'Superior',    price_single: 35, price_double: 45, price_triple: 58,  price: null, price_unit: 'per night', pax_label: null, notes: null },
@@ -61,17 +61,17 @@ export const MOCK_REFERENCE_DATA = [
 
   // ─── HOTELS: Dades ───
   { id: 'ref-21', category: 'hotel', subcategory: 'Hotel',        name: 'Kasbah des Roses',         city: 'Dades',     tier: 'Superior',      price_single: 32,  price_double: 40,  price_triple: 52,  price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-22', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Dades',              city: 'Dades',     tier: 'Basico',        price_single: 18,  price_double: 22,  price_triple: 29,  price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-22', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Dades',              city: 'Dades',     tier: 'Basic',        price_single: 18,  price_double: 22,  price_triple: 29,  price: null, price_unit: 'per night', pax_label: null, notes: null },
 
   // ─── HOTELS: Other cities ───
   { id: 'ref-23', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Farah',              city: 'Tanger',     tier: 'Superior',     price_single: 45,  price_double: 55,  price_triple: 72,  price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-24', category: 'hotel', subcategory: 'Hotel',        name: 'Sofitel Casablanca',       city: 'Casablanca', tier: 'Lujo',         price_single: 170, price_double: 200, price_triple: 270, price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-24', category: 'hotel', subcategory: 'Hotel',        name: 'Sofitel Casablanca',       city: 'Casablanca', tier: 'Luxury',         price_single: 170, price_double: 200, price_triple: 270, price: null, price_unit: 'per night', pax_label: null, notes: null },
   { id: 'ref-25', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Barcelo',            city: 'Casablanca', tier: 'Superior Plus', price_single: 60, price_double: 75, price_triple: 100, price: null, price_unit: 'per night', pax_label: null, notes: null },
   { id: 'ref-26', category: 'hotel', subcategory: 'Riad',         name: 'Riad Dar El Kebira',       city: 'Rabat',      tier: 'Superior',     price_single: 48,  price_double: 60,  price_triple: 78,  price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-27', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Sofitel Agadir',     city: 'Agadir',     tier: 'Superior Lujo', price_single: 85, price_double: 100, price_triple: 130, price: null, price_unit: 'per night', pax_label: null, notes: null },
-  { id: 'ref-28', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Ibis Tetouan',       city: 'Tetouan',    tier: 'Basico',       price_single: 24,  price_double: 30,  price_triple: 40,  price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-27', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Sofitel Agadir',     city: 'Agadir',     tier: 'Superior Luxury', price_single: 85, price_double: 100, price_triple: 130, price: null, price_unit: 'per night', pax_label: null, notes: null },
+  { id: 'ref-28', category: 'hotel', subcategory: 'Hotel',        name: 'Hotel Ibis Tetouan',       city: 'Tetouan',    tier: 'Basic',       price_single: 24,  price_double: 30,  price_triple: 40,  price: null, price_unit: 'per night', pax_label: null, notes: null },
   { id: 'ref-29', category: 'hotel', subcategory: 'Desert Camp',  name: 'Zagora Desert Camp',       city: 'Zagora',     tier: 'Superior',     price_single: 45,  price_double: 55,  price_triple: 72,  price: null, price_unit: 'per night', pax_label: null, notes: 'Dinner & breakfast included' },
-  { id: 'ref-30', category: 'hotel', subcategory: 'Desert Camp',  name: 'Agafay Luxury Camp',       city: 'Agafay',     tier: 'Lujo',         price_single: 150, price_double: 180, price_triple: 240, price: null, price_unit: 'per night', pax_label: null, notes: 'Pool, full board' },
+  { id: 'ref-30', category: 'hotel', subcategory: 'Desert Camp',  name: 'Agafay Luxury Camp',       city: 'Agafay',     tier: 'Luxury',         price_single: 150, price_double: 180, price_triple: 240, price: null, price_unit: 'per night', pax_label: null, notes: 'Pool, full board' },
 
   // ─── TRANSFERS ───
   { id: 'ref-31', category: 'transfer', subcategory: 'Airport Pickup',  name: 'Marrakech Airport Pickup',       city: 'Marrakech', tier: null, price: 20,  price_single: null, price_double: null, price_triple: null, price_unit: 'one way',    pax_label: '1-4 pax', notes: 'Private vehicle' },

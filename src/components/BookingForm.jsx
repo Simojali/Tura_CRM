@@ -1,17 +1,17 @@
 import { useState } from 'react'
-import { PROVEEDORES, HOTEL_TYPES, RESERV_STATUSES, CLIENT_TYPES } from '../lib/constants'
+import { PROVIDERS, HOTEL_TYPES, RESERV_STATUSES, CLIENT_TYPES } from '../lib/constants'
 import { computeDays } from '../lib/itineraryUtils'
 
 const EMPTY_FORM = {
-  proveedor: '',
-  referencia_agencia: '',
+  provider: '',
+  agency_reference: '',
   client_type: '',
   client_name: '',
-  telefono: '',
+  phone: '',
   check_in: '',
   check_out: '',
   number_of_guests: '',
-  n_dias: '',
+  number_of_days: '',
   type_of_hotels: '',
   single_rooms: 0,
   double_rooms: 0,
@@ -23,7 +23,7 @@ const EMPTY_FORM = {
   group_price_eur: '',
   group_price_mad: '',
   paid: '',
-  reserv_status: 'Pending',
+  booking_status: 'Pending',
   special_request: '',
 }
 
@@ -40,7 +40,7 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
       }
       if (name === 'check_in' || name === 'check_out') {
         const days = computeDays(updated)
-        updated.n_dias = days > 0 ? days : ''
+        updated.number_of_days = days > 0 ? days : ''
       }
       return updated
     })
@@ -71,9 +71,9 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
         {/* Provider */}
         <div className="form-group">
           <label>Provider</label>
-          <select name="proveedor" value={form.proveedor} onChange={handleChange}>
+          <select name="provider" value={form.provider} onChange={handleChange}>
             <option value="">-- Select --</option>
-            {PROVEEDORES.map((p) => (
+            {PROVIDERS.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
@@ -84,8 +84,8 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
           <label>Agency Reference</label>
           <input
             type="text"
-            name="referencia_agencia"
-            value={form.referencia_agencia}
+            name="agency_reference"
+            value={form.agency_reference}
             onChange={handleChange}
           />
         </div>
@@ -107,7 +107,7 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
             <label>Booking Reference</label>
             <input
               type="text"
-              value={form.referencia_ruta || ''}
+              value={form.booking_reference || ''}
               readOnly
             />
           </div>
@@ -130,8 +130,8 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
           <label>Phone</label>
           <input
             type="text"
-            name="telefono"
-            value={form.telefono}
+            name="phone"
+            value={form.phone}
             onChange={handleChange}
           />
         </div>
@@ -321,8 +321,8 @@ export default function BookingForm({ initialData, onSubmit, isDetail = false })
         <div className="form-group">
           <label>Booking Status *</label>
           <select
-            name="reserv_status"
-            value={form.reserv_status}
+            name="booking_status"
+            value={form.booking_status}
             onChange={handleChange}
             required
           >

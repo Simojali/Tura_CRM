@@ -1,4 +1,4 @@
-export const PROVEEDORES = [
+export const PROVIDERS = [
   'Ruta Tours',
   '10k tours',
   'Aroon y JENEY',
@@ -15,11 +15,11 @@ export const PROVEEDORES = [
 ]
 
 export const HOTEL_TYPES = [
-  'Basico',
+  'Basic',
   'Superior',
   'Superior Plus',
-  'Superior Lujo',
-  'Lujo',
+  'Superior Luxury',
+  'Luxury',
 ]
 
 export const RESERV_STATUSES = ['Confirmed', 'Pending', 'Passed']
@@ -50,12 +50,12 @@ const MONTH_ABBR = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ]
 
-export function generateReferenciaRuta(proveedor, sequentialNumber) {
+export function generateBookingReference(provider, sequentialNumber) {
   const now = new Date()
   const yy = String(now.getFullYear()).slice(-2)
   const mm = String(now.getMonth() + 1).padStart(2, '0')
   const monthAbbr = MONTH_ABBR[now.getMonth()]
-  const provAbbr = (proveedor || 'XX').slice(0, 2).toUpperCase()
+  const provAbbr = (provider || 'XX').slice(0, 2).toUpperCase()
   const seq = String(sequentialNumber).padStart(3, '0')
   return `${yy}${mm}${monthAbbr}${provAbbr}${seq}`
 }

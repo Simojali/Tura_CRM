@@ -4,15 +4,15 @@ import { supabase, isSupabaseConfigured } from './supabase'
 /**
  * Compute the number of days for a booking (inclusive: check-in day + check-out day).
  * e.g. Jun 10 → Jun 17 = 8 days, 7 nights.
- * Falls back to stored n_dias if dates are not available.
+ * Falls back to stored number_of_days if dates are not available.
  */
 export function computeDays(booking) {
-  const { check_in, check_out, n_dias } = booking
+  const { check_in, check_out, number_of_days } = booking
   if (check_in && check_out) {
     const diff = Math.round((new Date(check_out) - new Date(check_in)) / (1000 * 60 * 60 * 24))
     return diff > 0 ? diff + 1 : 1
   }
-  return Number(n_dias) || 0
+  return Number(number_of_days) || 0
 }
 
 /**

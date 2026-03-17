@@ -22,17 +22,17 @@ const normalizeBooking = (data) => ({
   unite_price_eur: data.unite_price_eur ?? '',
   group_price_eur: data.group_price_eur ?? '',
   group_price_mad: data.group_price_mad ?? '',
-  n_dias: data.n_dias ?? '',
+  number_of_days: data.number_of_days ?? '',
   number_of_guests: data.number_of_guests ?? '',
-  proveedor: data.proveedor || '',
+  provider: data.provider || '',
   client_type: data.client_type || '',
-  referencia_agencia: data.referencia_agencia || '',
-  telefono: data.telefono || '',
+  agency_reference: data.agency_reference || '',
+  phone: data.phone || '',
   flight_number: data.flight_number || '',
   flight_hour: data.flight_hour || '',
   flight_return: data.flight_return || '',
   type_of_hotels: data.type_of_hotels || '',
-  reserv_status: data.reserv_status || 'Pending',
+  booking_status: data.booking_status || 'Pending',
   special_request: data.special_request || '',
 })
 
@@ -143,17 +143,17 @@ export default function BookingDetail() {
     }
 
     const payload = {
-      proveedor: formData.proveedor || null,
+      provider: formData.provider || null,
       client_type: formData.client_type || null,
-      referencia_agencia: formData.referencia_agencia || null,
+      agency_reference: formData.agency_reference || null,
       client_name: formData.client_name,
-      telefono: formData.telefono || null,
+      phone: formData.phone || null,
       check_in: formData.check_in || null,
       check_out: formData.check_out || null,
       number_of_guests: Number(formData.number_of_guests) || 0,
-      n_dias: (() => {
+      number_of_days: (() => {
         const days = computeDays(formData)
-        return days > 0 ? days : (formData.n_dias === '' ? null : Number(formData.n_dias))
+        return days > 0 ? days : (formData.number_of_days === '' ? null : Number(formData.number_of_days))
       })(),
       type_of_hotels: formData.type_of_hotels || null,
       single_rooms: Number(formData.single_rooms) || 0,
@@ -166,7 +166,7 @@ export default function BookingDetail() {
       group_price_eur: formData.group_price_eur === '' ? null : Number(formData.group_price_eur),
       group_price_mad: formData.group_price_mad === '' ? null : Number(formData.group_price_mad),
       paid: formData.paid === '' ? 0 : Number(formData.paid),
-      reserv_status: formData.reserv_status,
+      booking_status: formData.booking_status,
       special_request: formData.special_request || null,
     }
 

@@ -118,8 +118,8 @@ export function statusLabel(s) {
  * e.g. { label: 'Partially paid', cls: 'bk-badge bk-badge-partial' }
  */
 export function paymentBadge(booking) {
-  if (booking.reserv_status === 'Cancelled') return { label: 'Cancelled', cls: 'bk-badge bk-badge-cancelled' }
-  if (booking.reserv_status === 'Passed')    return { label: 'Passed',    cls: 'bk-badge bk-badge-passed' }
+  if (booking.booking_status === 'Cancelled') return { label: 'Cancelled', cls: 'bk-badge bk-badge-cancelled' }
+  if (booking.booking_status === 'Passed')    return { label: 'Passed',    cls: 'bk-badge bk-badge-passed' }
   const total = Number(booking.group_price_eur) || 0
   const paid  = Number(booking.paid) || 0
   if (total === 0)    return { label: 'No price',       cls: 'bk-badge bk-badge-passed' }

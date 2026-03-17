@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { generateReferenciaRuta } from '../lib/constants'
+import { generateBookingReference } from '../lib/constants'
 import { loadItinerary, computeTotals, computeDays } from '../lib/itineraryUtils'
 import { MOCK_BOOKINGS } from '../lib/mockData'
 import { useAppContext } from '../lib/AppContext'
@@ -138,13 +138,13 @@ export default function Dashboard() {
 
   const handleCreateBooking = async (formData) => {
     const { count } = await supabase.from('bookings').select('*', { count: 'exact', head: true })
-    const referencia_ruta = generateReferenciaRuta(formData.proveedor, (count || 0) + 1)
+    const booking_reference = generateBookingReference(formData.provider, (count || 0) + 1)
     const payload = {
-      ...formData, referencia_ruta,
+      ...formData, booking_reference,
       number_of_guests: Number(formData.number_of_guests) || 0,
-      n_dias: (() => {
+      number_of_days: (() => {
         const days = computeDays(formData)
-        return days > 0 ? days : (formData.n_dias === '' ? null : Number(formData.n_dias))
+        return days > 0 ? days : (formData.number_of_days === '' ? null : Number(formData.number_of_days))
       })(),
       single_rooms:    Number(formData.single_rooms)  || 0,
       double_rooms:    Number(formData.double_rooms)  || 0,
@@ -228,11 +228,11 @@ export default function Dashboard() {
                     <div className="bk-client-name">{b.client_name}</div>
                     <div className="bk-chips">
                       <span className="bk-chip" title="Number of guests"><PeopleIcon /> {b.number_of_guests} {b.number_of_guests === 1 ? 'Guest' : 'Guests'}</span>
-                      <span className="bk-chip" title="Booking reference"><RefIcon /> {b.referencia_ruta}</span>
+                      <span className="bk-chip" title="Booking reference"><RefIcon /> {b.booking_reference}</span>
                     </div>
-                    {b.referencia_agencia && (
+                    {b.agency_reference && (
                       <div className="bk-chips" style={{ marginBottom: '0.4rem' }}>
-                        <span className="bk-chip" title="Agency reference"><AgencyIcon /> {b.referencia_agencia}</span>
+                        <span className="bk-chip" title="Agency reference"><AgencyIcon /> {b.agency_reference}</span>
                       </div>
                     )}
                   </div>
@@ -275,8 +275,8 @@ export default function Dashboard() {
                   {/* Booking Status */}
                   <div className="bk-section" style={{ minWidth: 120 }}>
                     <div className="bk-section-label">Status</div>
-                    <span className={`bk-status-badge bk-status-badge-${(b.reserv_status || 'pending').toLowerCase()}`}>
-                      {b.reserv_status || 'Pending'}
+                    <span className={`bk-status-badge bk-status-badge-${(b.booking_status || 'pending').toLowerCase()}`}>
+                      {b.booking_status || 'Pending'}
                     </span>
                   </div>
 

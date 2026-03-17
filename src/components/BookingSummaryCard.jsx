@@ -66,9 +66,9 @@ export default function BookingSummaryCard({ booking, onEdit }) {
           <div className="bc-name">{booking.client_name}</div>
           <div className="bc-meta-line">
             <span className="bc-meta-chip"><UsersIcon /> {booking.number_of_guests} {booking.number_of_guests === 1 ? 'Guest' : 'Guests'}</span>
-            <span className="bc-meta-chip"><RefIcon /> {booking.referencia_ruta}</span>
-            <span className={`status-badge ${statusClass(booking.reserv_status)}`}>
-              {booking.reserv_status}
+            <span className="bc-meta-chip"><RefIcon /> {booking.booking_reference}</span>
+            <span className={`status-badge ${statusClass(booking.booking_status)}`}>
+              {booking.booking_status}
             </span>
           </div>
         </div>
@@ -86,8 +86,8 @@ export default function BookingSummaryCard({ booking, onEdit }) {
         </div>
         <div className="bc-info-cell">
           <div className="bc-info-label">Provider</div>
-          <div className={`bc-info-value${!booking.proveedor ? ' bc-info-empty' : ''}`}>
-            <BuildingIcon /> {booking.proveedor || '—'}
+          <div className={`bc-info-value${!booking.provider ? ' bc-info-empty' : ''}`}>
+            <BuildingIcon /> {booking.provider || '—'}
           </div>
         </div>
         <div className="bc-info-cell">
@@ -132,14 +132,14 @@ export default function BookingSummaryCard({ booking, onEdit }) {
             </div>
             <div className="bc-info-cell">
               <div className="bc-info-label">Agency Ref</div>
-              <div className={`bc-info-value bc-info-value--plain${!booking.referencia_agencia ? ' bc-info-empty' : ' bc-info-link'}`}>
-                {booking.referencia_agencia || '—'}
+              <div className={`bc-info-value bc-info-value--plain${!booking.agency_reference ? ' bc-info-empty' : ' bc-info-link'}`}>
+                {booking.agency_reference || '—'}
               </div>
             </div>
             <div className="bc-info-cell">
               <div className="bc-info-label">Contact Phone</div>
-              <div className={`bc-info-value bc-info-value--plain${!booking.telefono ? ' bc-info-empty' : ''}`}>
-                {booking.telefono || '—'}
+              <div className={`bc-info-value bc-info-value--plain${!booking.phone ? ' bc-info-empty' : ''}`}>
+                {booking.phone || '—'}
               </div>
             </div>
           </div>
