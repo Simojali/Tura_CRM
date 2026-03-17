@@ -145,8 +145,10 @@ export default function Dashboard() {
     async function buildCostMap() {
       const map = {}
       for (const b of bookings) {
-        const itin = (await loadItinerary(b.id)) || []
-        map[b.id] = computeTotals(itin, b).costPerPerson
+        const loaded = await loadItinerary(b.id)
+        const rows = loaded?.rows || []
+        const contracts = loaded?.contracts || []
+        map[b.id] = computeTotals(rows, b, contracts).costPerPerson
       }
       setCostMap(map)
     }

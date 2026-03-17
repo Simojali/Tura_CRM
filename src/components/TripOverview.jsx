@@ -3,7 +3,7 @@ import { computeDayCost } from '../lib/itineraryUtils'
 import CostCalculations from './CostCalculations'
 import { fmtDate, fmtDateLong, fmtCost, fmtRooms, nextDay, statusLabel } from '../lib/formatters'
 
-export default function TripOverview({ booking, itinerary, onSave }) {
+export default function TripOverview({ booking, itinerary, contracts = [], onSave }) {
 
   // ── City change: clears hotel / activities / transfers for that day ───
   const handleCityChange = (index, city) => {
@@ -26,8 +26,8 @@ export default function TripOverview({ booking, itinerary, onSave }) {
     onSave(updated)
   }
 
-  // ── Merge activities + transfers into one sorted timeline ─────────────
-  const buildTimeline = (row) => {
+  // ── Merge activities + transfers + contract movements into one sorted timeline ─
+  const buildTimeline = (row, rowIndex) => {
     const items = []
     ;(row.activities || []).forEach((a) => {
       items.push({
@@ -50,6 +50,25 @@ export default function TripOverview({ booking, itinerary, onSave }) {
         toLocation: t.to_location,
       })
     })
+    // Include movements from transport contracts assigned to this day.
+    // Only the first movement per contract shows the cost — subsequent ones stay price-free.
+    contracts.forEach((c) => {
+      const dayMovements = (c.movements || []).filter((m) => m.dayIdx === rowIndex)
+      dayMovements.forEach((mov, idx) => {
+        items.push({
+          kind: 'transport',
+          time: mov.time,
+          name: c.name,
+          cost: c.cost_per_day || 0,
+          showCost: idx === 0,          // only first movement shows the price
+          status: c.status,
+          paxLabel: c.pax_label,
+          fromLocation: mov.from_location,
+          toLocation: mov.to_location,
+          driverName: c.driver_name,
+        })
+      })
+    })
     return items.sort((a, b) => (a.time || '').localeCompare(b.time || ''))
   }
 
@@ -69,8 +88,8 @@ export default function TripOverview({ booking, itinerary, onSave }) {
       ) : (
         <div className="to-day-cards">
           {itinerary.map((row, i) => {
-            const timeline = buildTimeline(row)
-            const dayCost = computeDayCost(row)
+            const timeline = buildTimeline(row, i)
+            const dayCost = computeDayCost(row, contracts, i)
             const checkin = row.hotel_checkin || row.date || ''
             const checkout = row.hotel_checkout || getAutoCheckout(i)
             const rooms = fmtRooms(booking)
@@ -144,10 +163,13 @@ export default function TripOverview({ booking, itinerary, onSave }) {
                           {item.paxLabel && (
                             <span className="itin-item-meta">{item.paxLabel}</span>
                           )}
+                          {item.driverName && (
+                            <span className="itin-item-meta">👤 {item.driverName}</span>
+                          )}
                         </div>
                         {(item.kind === 'transfer' || item.kind === 'transport') && (
                           <span className={`itin-type-badge ${item.kind}`}>
-                            {item.kind === 'transfer' ? 'Transfer' : 'Bus'}
+                            {item.kind === 'transfer' ? 'Transfer' : 'Transport'}
                           </span>
                         )}
                         {item.status && (
@@ -155,7 +177,9 @@ export default function TripOverview({ booking, itinerary, onSave }) {
                             {statusLabel(item.status)}
                           </span>
                         )}
-                        <span className="itin-item-cost">{fmtCost(item.cost)}</span>
+                        {(item.kind !== 'transport' || item.showCost) && (
+                          <span className="itin-item-cost">{fmtCost(item.cost)}</span>
+                        )}
                       </div>
                     ))
                   ) : (
@@ -169,7 +193,7 @@ export default function TripOverview({ booking, itinerary, onSave }) {
       )}
 
       {/* ── Cost Analysis at the bottom ── */}
-      <CostCalculations booking={booking} itinerary={itinerary} />
+      <CostCalculations booking={booking} itinerary={itinerary} contracts={contracts} />
     </div>
   )
 }

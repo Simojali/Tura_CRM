@@ -66,7 +66,17 @@ export function reconcileItinerary(saved, booking) {
   return saved.slice(0, expected.length)
 }
 
-/** Read saved itinerary from Supabase (or localStorage in mock mode). Returns null if none stored yet. */
+/**
+ * Normalize raw stored data into { rows, contracts }.
+ * Handles legacy format where data was stored as a plain array.
+ */
+function normalizeStored(raw) {
+  if (!raw) return null
+  if (Array.isArray(raw)) return { rows: raw, contracts: [] }
+  return { rows: raw.rows ?? [], contracts: raw.contracts ?? [] }
+}
+
+/** Read saved itinerary from Supabase (or localStorage in mock mode). Returns { rows, contracts } or null. */
 export async function loadItinerary(bookingId) {
   if (isSupabaseConfigured) {
     const { data } = await supabase
@@ -74,43 +84,50 @@ export async function loadItinerary(bookingId) {
       .select('rows')
       .eq('booking_id', bookingId)
       .single()
-    return data?.rows ?? null
+    return normalizeStored(data?.rows)
   }
   try {
     const stored = localStorage.getItem(`itinerary_${bookingId}`)
-    return stored ? JSON.parse(stored) : null
+    return stored ? normalizeStored(JSON.parse(stored)) : null
   } catch {
     return null
   }
 }
 
-/** Persist itinerary rows to Supabase (or localStorage in mock mode). */
-export async function saveItinerary(bookingId, rows) {
+/** Persist itinerary rows + contracts to Supabase (or localStorage in mock mode). */
+export async function saveItinerary(bookingId, rows, contracts = []) {
+  const blob = { rows, contracts }
   if (isSupabaseConfigured) {
     await supabase
       .from('itinerary_rows')
-      .upsert({ booking_id: bookingId, rows, updated_at: new Date().toISOString() })
+      .upsert({ booking_id: bookingId, rows: blob, updated_at: new Date().toISOString() }, { onConflict: 'booking_id' })
     return
   }
-  localStorage.setItem(`itinerary_${bookingId}`, JSON.stringify(rows))
+  localStorage.setItem(`itinerary_${bookingId}`, JSON.stringify(blob))
 }
 
 /**
- * Compute the total cost for a single itinerary row.
+ * Compute the display cost for a single itinerary day.
  * hotel_cost + all activity costs + all transfer costs
+ * + cost_per_day for each transport contract that has at least one movement on this day (display only — grand total is handled separately in computeTotals).
  */
-export function computeDayCost(row) {
+export function computeDayCost(row, contracts = [], rowIndex = -1) {
   const hotel = Number(row.hotel_cost) || 0
   const activities = (row.activities || []).reduce((sum, a) => sum + (Number(a.cost) || 0), 0)
   const transfers = (row.transfers || []).reduce((sum, t) => sum + (Number(t.cost) || 0), 0)
-  return hotel + activities + transfers
+  const contractCost = rowIndex >= 0
+    ? contracts
+        .filter((c) => (c.movements || []).some((m) => m.dayIdx === rowIndex))
+        .reduce((sum, c) => sum + (Number(c.cost_per_day) || 0), 0)
+    : 0
+  return hotel + activities + transfers + contractCost
 }
 
 /**
- * Aggregate totals across all rows.
+ * Aggregate totals across all rows + transport contracts.
  * Returns { hotelTotal, activityTotal, transferTotal, grandTotal, costPerPerson }
  */
-export function computeTotals(rows, booking) {
+export function computeTotals(rows, booking, contracts = []) {
   let hotelTotal = 0
   let activityTotal = 0
   let transferTotal = 0
@@ -120,6 +137,9 @@ export function computeTotals(rows, booking) {
     activityTotal += (row.activities || []).reduce((sum, a) => sum + (Number(a.cost) || 0), 0)
     transferTotal += (row.transfers || []).reduce((sum, t) => sum + (Number(t.cost) || 0), 0)
   })
+
+  // Add daily transport contract costs
+  transferTotal += contracts.reduce((sum, c) => sum + (Number(c.cost_per_day) || 0) * (Number(c.days_hired) || 0), 0)
 
   const grandTotal = hotelTotal + activityTotal + transferTotal
   const guests = Math.max(Number(booking.number_of_guests) || 1, 1)

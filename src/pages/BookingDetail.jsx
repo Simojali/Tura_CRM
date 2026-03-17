@@ -79,13 +79,14 @@ export default function BookingDetail() {
   const [searchParams] = useSearchParams()
   const [booking, setBooking] = useState(null)
   const [itinerary, setItinerary] = useState([])
+  const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [showEditModal, setShowEditModal] = useState(searchParams.get('edit') === 'true')
   const [activeTab, setActiveTab] = useState('overview')
 
-  // ── Tab counts (derived from itinerary) ─────────────────────────────
-  const transferCount = itinerary.reduce((n, r) => n + (r.transfers?.length || 0), 0)
+  // ── Tab counts (derived from itinerary + contracts) ─────────────────
+  const transferCount = itinerary.reduce((n, r) => n + (r.transfers?.length || 0), 0) + contracts.length
   const hotelCount    = itinerary.filter((r) => r.hotel_id).length
   const activityCount = itinerary.reduce((n, r) => n + (r.activities?.length || 0), 0)
 
@@ -133,7 +134,8 @@ export default function BookingDetail() {
       setBooking(b)
       if (b) {
         const saved = await loadItinerary(id)
-        setItinerary(reconcileItinerary(saved, b))
+        setItinerary(reconcileItinerary(saved?.rows ?? null, b))
+        setContracts(saved?.contracts ?? [])
       }
       setLoading(false)
       return
@@ -152,7 +154,8 @@ export default function BookingDetail() {
       const b = normalizeBooking(data)
       setBooking(b)
       const saved = await loadItinerary(id)
-      setItinerary(saved || initItinerary(b))
+      setItinerary(saved?.rows || initItinerary(b))
+      setContracts(saved?.contracts || [])
     }
     setLoading(false)
   }, [id])
@@ -164,8 +167,14 @@ export default function BookingDetail() {
   // ── Shared itinerary save handler ──
   const handleItinerarySave = async (rows) => {
     setItinerary(rows)
-    await saveItinerary(id, rows)
+    await saveItinerary(id, rows, contracts)
     setToast({ message: 'Itinerary saved', type: 'success' })
+  }
+
+  // ── Contracts save handler ──
+  const handleContractsSave = async (newContracts) => {
+    setContracts(newContracts)
+    await saveItinerary(id, itinerary, newContracts)
   }
 
   const handleSave = async (formData) => {
@@ -173,7 +182,7 @@ export default function BookingDetail() {
       const b = normalizeBooking({ ...booking, ...formData })
       setBooking(b)
       const saved = await loadItinerary(id)
-      setItinerary(reconcileItinerary(saved, b))
+      setItinerary(reconcileItinerary(saved?.rows ?? null, b))
       setShowEditModal(false)
       setToast({ message: 'Booking updated successfully', type: 'success' })
       return
@@ -275,6 +284,7 @@ export default function BookingDetail() {
               <TripOverview
                 booking={booking}
                 itinerary={itinerary}
+                contracts={contracts}
                 onSave={handleItinerarySave}
               />
             )}
@@ -283,7 +293,9 @@ export default function BookingDetail() {
               <TransfersTab
                 booking={booking}
                 itinerary={itinerary}
+                contracts={contracts}
                 onSave={handleItinerarySave}
+                onSaveContracts={handleContractsSave}
               />
             )}
 

@@ -1,537 +1,694 @@
 import { useState, useEffect, useMemo } from 'react'
-import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
+import { loadReferenceData } from '../lib/referenceData'
 import { fmtDate, fmtCost } from '../lib/formatters'
 import { TRANSFER_STATUS_LABELS as STATUS_LABELS } from '../lib/constants'
 
-const refTransfers = MOCK_REFERENCE_DATA.filter((r) => r.category === 'transfer')
-const refTransports = MOCK_REFERENCE_DATA.filter((r) => r.category === 'transport')
-
 const STATUSES = [
-  { value: 'all',        label: 'All' },
-  { value: 'requested',  label: 'Requested' },
-  { value: 'confirmed',  label: 'Confirmed' },
-  { value: 'done',       label: 'Done' },
-  { value: 'cancelled',  label: 'Cancelled' },
+  { value: 'all',       label: 'All' },
+  { value: 'requested', label: 'Requested' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'done',      label: 'Done' },
+  { value: 'cancelled', label: 'Cancelled' },
 ]
 
-const EMPTY_ADD_FORM = {
-  dayIdx: '', transferId: '', time: '09:00',
+const EMPTY_FLAT_FORM = {
+  dayIdx: '', refId: '', time: '09:00',
   status: 'requested', driverName: '', driverPhone: '',
   fromLocation: '', toLocation: '',
 }
 
-export default function TransfersTab({ booking: _booking, itinerary, onSave }) {
-  const [filterStatus, setFilterStatus] = useState('all')
-  const [openMenuIdx, setOpenMenuIdx] = useState(null)
-  const [editingIdx, setEditingIdx] = useState(null)
-  const [editForm, setEditForm] = useState({})
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [addForm, setAddForm] = useState(EMPTY_ADD_FORM)
+const EMPTY_CONTRACT_FORM = {
+  refId: '', daysHired: '', costPerDay: '',
+  driverName: '', driverPhone: '',
+  status: 'requested', notes: '',
+}
 
-  // Close ⋮ menu when clicking anywhere outside
+const EMPTY_MOVEMENT_FORM = { dayIdx: '', time: '09:00', fromLocation: '', toLocation: '' }
+
+function genId() {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2)
+}
+
+export default function TransfersTab({ booking: _booking, itinerary, contracts = [], onSave, onSaveContracts }) {
+  const [refTransfers, setRefTransfers]   = useState([])
+  const [refTransports, setRefTransports] = useState([])
+  const [filterStatus,  setFilterStatus]  = useState('all')
+
+  // Add form
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addType,     setAddType]     = useState('flat') // 'flat' | 'contract'
+  const [flatForm,    setFlatForm]    = useState(EMPTY_FLAT_FORM)
+  const [contractForm, setContractForm] = useState(EMPTY_CONTRACT_FORM)
+
+  // Inline editing
+  const [editingFlatKey,     setEditingFlatKey]     = useState(null) // 'dayIndex-transferIndex'
+  const [editFlatForm,       setEditFlatForm]       = useState({})
+  const [editingContractId,  setEditingContractId]  = useState(null)
+  const [editContractForm,   setEditContractForm]   = useState({})
+  const [editingMovementKey, setEditingMovementKey] = useState(null) // 'contractId-movementId'
+  const [editMovementForm,   setEditMovementForm]   = useState({})
+
+  // Add movement form (inside a contract)
+  const [addingMovementFor,  setAddingMovementFor]  = useState(null) // contractId
+  const [movementForm,       setMovementForm]       = useState(EMPTY_MOVEMENT_FORM)
+
+  // Expanded contracts
+  const [expanded, setExpanded] = useState(new Set())
+
+  // Dots menus
+  const [openFlatMenu,     setOpenFlatMenu]     = useState(null)
+  const [openContractMenu, setOpenContractMenu] = useState(null)
+
+  // Load reference data
   useEffect(() => {
-    const close = () => setOpenMenuIdx(null)
+    loadReferenceData().then((items) => {
+      setRefTransfers(items.filter((r) => r.category === 'transfer'))
+      setRefTransports(items.filter((r) => r.category === 'transport'))
+    })
+  }, [])
+
+  // Close menus on outside click
+  useEffect(() => {
+    const close = () => { setOpenFlatMenu(null); setOpenContractMenu(null) }
     document.addEventListener('click', close)
     return () => document.removeEventListener('click', close)
   }, [])
 
-  // ── Flat list: aggregate transfers from all days ──────────────────────
-  const allTransfers = useMemo(() =>
+  // ── Flat transfers: flat list from all day rows ──────────────────────
+  const allFlat = useMemo(() =>
     itinerary.flatMap((row, dayIndex) =>
       (row.transfers || []).map((t, transferIndex) => ({
-        ...t,
-        date: row.date,
-        day: row.day,
-        city: row.city,
-        dayIndex,
-        transferIndex,
+        ...t, date: row.date, day: row.day, city: row.city, dayIndex, transferIndex,
       }))
     ).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)),
     [itinerary]
   )
 
-  const filtered = useMemo(() =>
-    filterStatus === 'all'
-      ? allTransfers
-      : allTransfers.filter((t) => (t.status || 'requested') === filterStatus),
-    [allTransfers, filterStatus]
-  )
+  // ── Unified sorted list ─────────────────────────────────────────────
+  // Each item: { kind: 'flat', ...} or { kind: 'contract', ...}
+  const unifiedList = useMemo(() => {
+    const flats = allFlat.map((t) => ({ kind: 'flat', sortKey: t.date + t.time, ...t }))
+    const contractItems = contracts.map((c) => {
+      const firstMov = [...(c.movements || [])].sort((a, b) => a.date?.localeCompare(b.date || '') || 0)[0]
+      const sortKey = firstMov?.date ? firstMov.date + (firstMov.time || '00:00') : '9999'
+      return { kind: 'contract', sortKey, ...c }
+    })
+    return [...flats, ...contractItems].sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+  }, [allFlat, contracts])
 
-  // ── Update a transfer item in the itinerary ───────────────────────────
-  const updateTransfer = (dayIndex, transferIndex, changes) => {
+  const filteredList = useMemo(() => {
+    if (filterStatus === 'all') return unifiedList
+    return unifiedList.filter((item) => (item.status || 'requested') === filterStatus)
+  }, [unifiedList, filterStatus])
+
+  const countByStatus = (status) => unifiedList.filter((i) => (i.status || 'requested') === status).length
+
+  // ── Flat transfer CRUD ──────────────────────────────────────────────
+  const updateFlat = (dayIndex, transferIndex, changes) => {
     const updated = itinerary.map((row, ri) => {
       if (ri !== dayIndex) return row
-      return {
-        ...row,
-        transfers: row.transfers.map((t, ti) =>
-          ti !== transferIndex ? t : { ...t, ...changes }
-        ),
-      }
+      return { ...row, transfers: row.transfers.map((t, ti) => ti !== transferIndex ? t : { ...t, ...changes }) }
     })
     onSave(updated)
   }
 
-  // ── Quick status actions ───────────────────────────────────────────────
-  const markStatus = (item, status) => {
-    updateTransfer(item.dayIndex, item.transferIndex, { status })
-    setOpenMenuIdx(null)
-  }
-
-  const deleteTransfer = (dayIndex, transferIndex, transferName) => {
-    if (!window.confirm(`Delete transfer "${transferName || 'this transfer'}"? This cannot be undone.`)) return
+  const deleteFlat = (dayIndex, transferIndex, name) => {
+    if (!window.confirm(`Delete "${name || 'this transfer'}"? This cannot be undone.`)) return
     const updated = itinerary.map((row, ri) => {
       if (ri !== dayIndex) return row
-      return {
-        ...row,
-        transfers: row.transfers.filter((_, ti) => ti !== transferIndex),
-      }
+      return { ...row, transfers: row.transfers.filter((_, ti) => ti !== transferIndex) }
     })
     onSave(updated)
-    setOpenMenuIdx(null)
+    setOpenFlatMenu(null)
   }
 
-  // ── Add transfer / transport ──────────────────────────────────────────
-  const addTransferItem = () => {
-    const { dayIdx, transferId, time, status, driverName, driverPhone, fromLocation, toLocation } = addForm
-    if (dayIdx === '' || !transferId) return
-    const [category, refId] = transferId.split(':')
+  const markFlatStatus = (item, status) => {
+    updateFlat(item.dayIndex, item.transferIndex, { status })
+    setOpenFlatMenu(null)
+  }
+
+  const addFlat = () => {
+    const { dayIdx, refId, time, status, driverName, driverPhone, fromLocation, toLocation } = flatForm
+    if (dayIdx === '' || !refId) return
+    const [category, id] = refId.split(':')
     const pool = category === 'transfer' ? refTransfers : refTransports
-    const item = pool.find((r) => r.id === refId)
+    const item = pool.find((r) => r.id === id)
     if (!item) return
     const updated = itinerary.map((row, ri) => {
       if (ri !== Number(dayIdx)) return row
       return {
         ...row,
         transfers: [...(row.transfers || []), {
-          id: refId,
-          name: item.name,
-          cost: item.price || 0,
-          type: category,
-          time,
-          pax_label: item.pax_label || null,
-          status,
-          driver_name: driverName,
-          driver_phone: driverPhone,
-          from_location: fromLocation,
-          to_location: toLocation,
-          notes: '',
+          id, name: item.name, cost: item.price || 0, type: category,
+          time, pax_label: item.pax_label || null, status,
+          driver_name: driverName, driver_phone: driverPhone,
+          from_location: fromLocation, to_location: toLocation, notes: '',
         }].sort((a, b) => a.time.localeCompare(b.time)),
       }
     })
     onSave(updated)
     setShowAddForm(false)
-    setAddForm(EMPTY_ADD_FORM)
+    setFlatForm(EMPTY_FLAT_FORM)
   }
 
-  // ── Inline edit ───────────────────────────────────────────────────────
-  const startEdit = (item, idx) => {
-    setEditForm({
-      time: item.time || '',
-      status: item.status || 'requested',
-      from_location: item.from_location || '',
-      to_location: item.to_location || '',
-      driver_name: item.driver_name || '',
-      driver_phone: item.driver_phone || '',
+  const startEditFlat = (item) => {
+    setEditFlatForm({
+      time: item.time || '', status: item.status || 'requested',
+      from_location: item.from_location || '', to_location: item.to_location || '',
+      driver_name: item.driver_name || '', driver_phone: item.driver_phone || '',
       notes: item.notes || '',
     })
-    setEditingIdx(idx)
-    setOpenMenuIdx(null)
+    setEditingFlatKey(`${item.dayIndex}-${item.transferIndex}`)
+    setOpenFlatMenu(null)
   }
 
-  const saveEdit = (item) => {
-    updateTransfer(item.dayIndex, item.transferIndex, editForm)
-    setEditingIdx(null)
+  const saveEditFlat = (item) => {
+    updateFlat(item.dayIndex, item.transferIndex, editFlatForm)
+    setEditingFlatKey(null)
   }
 
-  const cancelEdit = () => {
-    setEditingIdx(null)
-    setEditForm({})
+  // ── Contract CRUD ───────────────────────────────────────────────────
+  const addContract = () => {
+    const { refId, daysHired, costPerDay, driverName, driverPhone, status, notes } = contractForm
+    if (!refId || !daysHired) return
+    const item = refTransports.find((r) => r.id === refId)
+    if (!item) return
+    const newContract = {
+      id: genId(), ref_id: refId,
+      name: item.name, pax_label: item.pax_label || null,
+      cost_per_day: costPerDay !== '' ? Number(costPerDay) : (item.price || 0),
+      days_hired: Number(daysHired),
+      driver_name: driverName, driver_phone: driverPhone,
+      status, notes, movements: [],
+    }
+    const updated = [...contracts, newContract]
+    onSaveContracts(updated)
+    setExpanded((prev) => new Set([...prev, newContract.id]))
+    setShowAddForm(false)
+    setContractForm(EMPTY_CONTRACT_FORM)
   }
 
-  // ── Count per status for filter badges ───────────────────────────────
-  const countByStatus = (status) =>
-    allTransfers.filter((t) => (t.status || 'requested') === status).length
+  const deleteContract = (contractId, name) => {
+    if (!window.confirm(`Delete transport contract "${name}"? This cannot be undone.`)) return
+    onSaveContracts(contracts.filter((c) => c.id !== contractId))
+    setOpenContractMenu(null)
+  }
+
+  const markContractStatus = (contractId, status) => {
+    onSaveContracts(contracts.map((c) => c.id === contractId ? { ...c, status } : c))
+    setOpenContractMenu(null)
+  }
+
+  const startEditContract = (c) => {
+    setEditContractForm({
+      name: c.name, cost_per_day: c.cost_per_day, days_hired: c.days_hired,
+      driver_name: c.driver_name || '', driver_phone: c.driver_phone || '',
+      status: c.status || 'requested', notes: c.notes || '',
+    })
+    setEditingContractId(c.id)
+    setOpenContractMenu(null)
+  }
+
+  const saveEditContract = (contractId) => {
+    onSaveContracts(contracts.map((c) => c.id === contractId ? { ...c, ...editContractForm } : c))
+    setEditingContractId(null)
+  }
+
+  // ── Movement CRUD ───────────────────────────────────────────────────
+  const addMovement = (contractId) => {
+    const { dayIdx, time, fromLocation, toLocation } = movementForm
+    if (dayIdx === '') return
+    const row = itinerary[Number(dayIdx)]
+    const newMov = {
+      id: genId(), dayIdx: Number(dayIdx),
+      date: row?.date || '', time,
+      from_location: fromLocation, to_location: toLocation,
+    }
+    onSaveContracts(contracts.map((c) => {
+      if (c.id !== contractId) return c
+      const movements = [...(c.movements || []), newMov]
+        .sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.time.localeCompare(b.time))
+      return { ...c, movements }
+    }))
+    setAddingMovementFor(null)
+    setMovementForm(EMPTY_MOVEMENT_FORM)
+  }
+
+  const deleteMovement = (contractId, movementId) => {
+    onSaveContracts(contracts.map((c) => {
+      if (c.id !== contractId) return c
+      return { ...c, movements: (c.movements || []).filter((m) => m.id !== movementId) }
+    }))
+  }
+
+  const startEditMovement = (contractId, mov) => {
+    setEditMovementForm({
+      dayIdx: mov.dayIdx ?? '', time: mov.time || '',
+      from_location: mov.from_location || '', to_location: mov.to_location || '',
+    })
+    setEditingMovementKey(`${contractId}-${mov.id}`)
+  }
+
+  const saveEditMovement = (contractId, movementId) => {
+    const { dayIdx, time, from_location, to_location } = editMovementForm
+    const row = itinerary[Number(dayIdx)]
+    onSaveContracts(contracts.map((c) => {
+      if (c.id !== contractId) return c
+      const movements = (c.movements || []).map((m) =>
+        m.id !== movementId ? m
+          : { ...m, dayIdx: Number(dayIdx), date: row?.date || m.date, time, from_location, to_location }
+      ).sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.time.localeCompare(b.time))
+      return { ...c, movements }
+    }))
+    setEditingMovementKey(null)
+  }
+
+  const toggleExpand = (id) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const totalItems = allFlat.length + contracts.length
+
+  // ── Derived reference data for add flat form ──────────────────────
+  const selFlatDay = flatForm.dayIdx !== '' ? itinerary[Number(flatForm.dayIdx)] : null
+  const selFlatCity = selFlatDay?.city || ''
+  const cityTransfers = selFlatCity ? refTransfers.filter((r) => r.city === selFlatCity) : refTransfers
+
+  // Pre-fill cost when transport ref is selected in contract form
+  const handleContractRefChange = (refId) => {
+    const item = refTransports.find((r) => r.id === refId)
+    setContractForm((f) => ({ ...f, refId, costPerDay: item ? String(item.price || '') : '' }))
+  }
 
   return (
     <div className="transfers-tab">
       {/* ── Header ── */}
       <div className="transfers-tab-header">
         <div className="transfers-tab-title-row">
-          <h3 className="transfers-tab-title">All Transfers & Transport</h3>
-          <span className="transfers-tab-count">{allTransfers.length} total</span>
-          <button
-            className="btn btn-primary"
-            style={{ marginLeft: 'auto' }}
-            onClick={() => { setShowAddForm(true); setEditingIdx(null) }}
-          >
-            + Add Transfer
-          </button>
+          <h3 className="transfers-tab-title">Transfers & Transport</h3>
+          <span className="transfers-tab-count">{totalItems} total</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => { setShowAddForm(true); setAddType('flat'); setEditingFlatKey(null); setEditingContractId(null) }}
+            >
+              + Transfer
+            </button>
+            <button
+              className="btn btn-outline"
+              onClick={() => { setShowAddForm(true); setAddType('contract'); setEditingFlatKey(null); setEditingContractId(null) }}
+            >
+              + Contract
+            </button>
+          </div>
         </div>
 
-        {/* Filter buttons */}
+        {/* Status filter */}
         <div className="transfers-filter-bar">
           {STATUSES.map((s) => {
-            const cnt = s.value === 'all' ? allTransfers.length : countByStatus(s.value)
+            const cnt = s.value === 'all' ? totalItems : countByStatus(s.value)
             return (
               <button
                 key={s.value}
                 className={`transfers-filter-btn${filterStatus === s.value ? ' active' : ''}`}
                 onClick={() => setFilterStatus(s.value)}
               >
-                {s.label}
-                {cnt > 0 && <span className="tf-filter-count">{cnt}</span>}
+                {s.label}{cnt > 0 && <span className="tf-filter-count">{cnt}</span>}
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* ── Add form ── */}
-      {showAddForm && (() => {
-        const selDay = addForm.dayIdx !== '' ? itinerary[Number(addForm.dayIdx)] : null
-        const selCity = selDay?.city || ''
-        const cityTransfers = selCity ? refTransfers.filter((r) => r.city === selCity) : []
-        return (
-          <div className="tab-add-form">
-            <div className="tab-add-form-title">Add Transfer / Transport to Day</div>
-
-            {/* Day */}
-            <div className="tab-add-field">
-              <label>Day</label>
-              <select
-                className="tr-edit-input"
-                value={addForm.dayIdx}
-                onChange={(e) => setAddForm((f) => ({ ...f, dayIdx: e.target.value, transferId: '' }))}
-              >
-                <option value="">— Select day —</option>
-                {itinerary.map((row, i) => (
-                  <option key={i} value={i}>
-                    Day {row.day} · {fmtDate(row.date)}{row.city ? ` · ${row.city}` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Time */}
-            <div className="tab-add-field">
-              <label>Time</label>
-              <input
-                type="time"
-                className="tr-edit-input"
-                value={addForm.time}
-                onChange={(e) => setAddForm((f) => ({ ...f, time: e.target.value }))}
-              />
-            </div>
-
-            {/* Transfer / Transport picker */}
-            <div className="tab-add-field wide">
-              <label>Transfer / Transport</label>
-              <select
-                className="tr-edit-input"
-                value={addForm.transferId}
-                disabled={addForm.dayIdx === ''}
-                onChange={(e) => setAddForm((f) => ({ ...f, transferId: e.target.value }))}
-              >
-                <option value="">— Select transfer or transport —</option>
-                {cityTransfers.length > 0 && (
-                  <optgroup label={`Transfers — ${selCity}`}>
-                    {cityTransfers.map((r) => (
-                      <option key={`transfer:${r.id}`} value={`transfer:${r.id}`}>
-                        {r.name}{r.pax_label ? ` (${r.pax_label})` : ''}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-                <optgroup label="Transport (all routes)">
-                  {refTransports.map((r) => (
-                    <option key={`transport:${r.id}`} value={`transport:${r.id}`}>
+      {/* ── Add Form ── */}
+      {showAddForm && (
+        <div className="tab-add-form">
+          {addType === 'flat' ? (
+            <>
+              <div className="tab-add-form-title">Add Single Transfer / Service</div>
+              <div className="tab-add-field">
+                <label>Day</label>
+                <select className="tr-edit-input" value={flatForm.dayIdx}
+                  onChange={(e) => setFlatForm((f) => ({ ...f, dayIdx: e.target.value, refId: '' }))}>
+                  <option value="">— Select day —</option>
+                  {itinerary.map((row, i) => (
+                    <option key={i} value={i}>Day {row.day} · {fmtDate(row.date)}{row.city ? ` · ${row.city}` : ''}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="tab-add-field">
+                <label>Time</label>
+                <input type="time" className="tr-edit-input" value={flatForm.time}
+                  onChange={(e) => setFlatForm((f) => ({ ...f, time: e.target.value }))} />
+              </div>
+              <div className="tab-add-field wide">
+                <label>Transfer</label>
+                <select className="tr-edit-input" value={flatForm.refId} disabled={flatForm.dayIdx === ''}
+                  onChange={(e) => setFlatForm((f) => ({ ...f, refId: e.target.value }))}>
+                  <option value="">— Select —</option>
+                  {cityTransfers.map((r) => (
+                    <option key={`transfer:${r.id}`} value={`transfer:${r.id}`}>
                       {r.name}{r.pax_label ? ` (${r.pax_label})` : ''}
                     </option>
                   ))}
-                </optgroup>
-              </select>
-            </div>
-
-            {/* Route: From */}
-            <div className="tab-add-field">
-              <label>From (Pickup)</label>
-              <input
-                className="tr-edit-input"
-                placeholder="e.g. Marrakech Airport"
-                value={addForm.fromLocation}
-                onChange={(e) => setAddForm((f) => ({ ...f, fromLocation: e.target.value }))}
-              />
-            </div>
-
-            {/* Route: To */}
-            <div className="tab-add-field">
-              <label>To (Dropoff)</label>
-              <input
-                className="tr-edit-input"
-                placeholder="e.g. Hotel Kenzi Menara"
-                value={addForm.toLocation}
-                onChange={(e) => setAddForm((f) => ({ ...f, toLocation: e.target.value }))}
-              />
-            </div>
-
-            {/* Status */}
-            <div className="tab-add-field">
-              <label>Status</label>
-              <select
-                className="tr-edit-input"
-                value={addForm.status}
-                onChange={(e) => setAddForm((f) => ({ ...f, status: e.target.value }))}
-              >
-                {STATUSES.filter((s) => s.value !== 'all').map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Driver Name */}
-            <div className="tab-add-field">
-              <label>Driver Name</label>
-              <input
-                className="tr-edit-input"
-                placeholder="Optional"
-                value={addForm.driverName}
-                onChange={(e) => setAddForm((f) => ({ ...f, driverName: e.target.value }))}
-              />
-            </div>
-
-            {/* Driver Phone */}
-            <div className="tab-add-field">
-              <label>Driver Phone</label>
-              <input
-                className="tr-edit-input"
-                placeholder="+212 6xx xxx xxx"
-                value={addForm.driverPhone}
-                onChange={(e) => setAddForm((f) => ({ ...f, driverPhone: e.target.value }))}
-              />
-            </div>
-
-            <div className="tab-add-actions">
-              <button
-                className="btn btn-success"
-                disabled={addForm.dayIdx === '' || !addForm.transferId}
-                onClick={addTransferItem}
-              >Save</button>
-              <button className="btn btn-outline" onClick={() => {
-                setShowAddForm(false)
-                setAddForm(EMPTY_ADD_FORM)
-              }}>Cancel</button>
-            </div>
-          </div>
-        )
-      })()}
+                </select>
+              </div>
+              <div className="tab-add-field">
+                <label>From (Pickup)</label>
+                <input className="tr-edit-input" placeholder="e.g. Marrakech Airport" value={flatForm.fromLocation}
+                  onChange={(e) => setFlatForm((f) => ({ ...f, fromLocation: e.target.value }))} />
+              </div>
+              <div className="tab-add-field">
+                <label>To (Dropoff)</label>
+                <input className="tr-edit-input" placeholder="e.g. Hotel Kenzi" value={flatForm.toLocation}
+                  onChange={(e) => setFlatForm((f) => ({ ...f, toLocation: e.target.value }))} />
+              </div>
+              <div className="tab-add-field">
+                <label>Status</label>
+                <select className="tr-edit-input" value={flatForm.status}
+                  onChange={(e) => setFlatForm((f) => ({ ...f, status: e.target.value }))}>
+                  {STATUSES.filter((s) => s.value !== 'all').map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="tab-add-field">
+                <label>Driver Name</label>
+                <input className="tr-edit-input" placeholder="Optional" value={flatForm.driverName}
+                  onChange={(e) => setFlatForm((f) => ({ ...f, driverName: e.target.value }))} />
+              </div>
+              <div className="tab-add-field">
+                <label>Driver Phone</label>
+                <input className="tr-edit-input" placeholder="+212 6xx xxx xxx" value={flatForm.driverPhone}
+                  onChange={(e) => setFlatForm((f) => ({ ...f, driverPhone: e.target.value }))} />
+              </div>
+              <div className="tab-add-actions">
+                <button className="btn btn-success" disabled={flatForm.dayIdx === '' || !flatForm.refId} onClick={addFlat}>Save</button>
+                <button className="btn btn-outline" onClick={() => { setShowAddForm(false); setFlatForm(EMPTY_FLAT_FORM) }}>Cancel</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="tab-add-form-title">Add Daily Transport Contract</div>
+              <div className="tab-add-field wide">
+                <label>Transport Provider</label>
+                <select className="tr-edit-input" value={contractForm.refId}
+                  onChange={(e) => handleContractRefChange(e.target.value)}>
+                  <option value="">— Select transport —</option>
+                  {refTransports.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}{r.pax_label ? ` (${r.pax_label})` : ''}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="tab-add-field">
+                <label>Days Hired</label>
+                <input type="number" className="tr-edit-input" placeholder="e.g. 6" min="1" value={contractForm.daysHired}
+                  onChange={(e) => setContractForm((f) => ({ ...f, daysHired: e.target.value }))} />
+              </div>
+              <div className="tab-add-field">
+                <label>Cost / Day (€)</label>
+                <input type="number" className="tr-edit-input" placeholder="e.g. 150" min="0" value={contractForm.costPerDay}
+                  onChange={(e) => setContractForm((f) => ({ ...f, costPerDay: e.target.value }))} />
+              </div>
+              <div className="tab-add-field">
+                <label>Driver Name</label>
+                <input className="tr-edit-input" placeholder="Optional" value={contractForm.driverName}
+                  onChange={(e) => setContractForm((f) => ({ ...f, driverName: e.target.value }))} />
+              </div>
+              <div className="tab-add-field">
+                <label>Driver Phone</label>
+                <input className="tr-edit-input" placeholder="+212 6xx xxx xxx" value={contractForm.driverPhone}
+                  onChange={(e) => setContractForm((f) => ({ ...f, driverPhone: e.target.value }))} />
+              </div>
+              <div className="tab-add-field">
+                <label>Status</label>
+                <select className="tr-edit-input" value={contractForm.status}
+                  onChange={(e) => setContractForm((f) => ({ ...f, status: e.target.value }))}>
+                  {STATUSES.filter((s) => s.value !== 'all').map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="tab-add-field wide">
+                <label>Notes</label>
+                <textarea className="tr-edit-input" rows={2} placeholder="Special instructions…" value={contractForm.notes}
+                  onChange={(e) => setContractForm((f) => ({ ...f, notes: e.target.value }))} />
+              </div>
+              <div className="tab-add-actions">
+                <button className="btn btn-success" disabled={!contractForm.refId || !contractForm.daysHired} onClick={addContract}>Save Contract</button>
+                <button className="btn btn-outline" onClick={() => { setShowAddForm(false); setContractForm(EMPTY_CONTRACT_FORM) }}>Cancel</button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* ── Empty state ── */}
-      {allTransfers.length === 0 ? (
+      {totalItems === 0 ? (
         <div className="transfers-empty">
-          No transfers yet. Click <strong>+ Add Transfer</strong> above to add transfers to any day.
+          No transfers or transport yet. Click <strong>+ Add</strong> to get started.
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="transfers-empty">
-          No {filterStatus} transfers.
-        </div>
+      ) : filteredList.length === 0 ? (
+        <div className="transfers-empty">No {filterStatus} items.</div>
       ) : (
         <div className="transfers-list">
-          {/* Column headers */}
+          {/* Column headers (for flat rows) */}
           <div className="transfers-list-header">
             <span className="tr-col-datetime">Date & Time</span>
-            <span className="tr-col-info">Transfer / Route</span>
+            <span className="tr-col-info">Service / Route</span>
             <span className="tr-col-driver">Driver</span>
             <span className="tr-col-status">Status</span>
             <span className="tr-col-cost">Cost</span>
             <span className="tr-col-menu" />
           </div>
 
-          {filtered.map((item, idx) => (
-            <div key={idx}>
-              {/* Main row */}
-              <div className={`transfers-row${item.status === 'cancelled' ? ' cancelled' : ''}`}>
-                {/* Date & time */}
-                <div className="tr-datetime">
-                  <span className="tr-date">Day {item.day} · {fmtDate(item.date)}</span>
-                  <span className="tr-time">{item.time}</span>
-                  {item.city && <span className="tr-city">{item.city}</span>}
-                </div>
-
-                {/* Name, route & type */}
-                <div className="tr-info">
-                  <span className="tr-name">{item.name}</span>
-                  {(item.from_location || item.to_location) && (
-                    <span className="tr-route">
-                      {item.from_location || '?'} → {item.to_location || '?'}
-                    </span>
+          {filteredList.map((item, idx) => {
+            if (item.kind === 'flat') {
+              const flatKey = `${item.dayIndex}-${item.transferIndex}`
+              const isEditing = editingFlatKey === flatKey
+              return (
+                <div key={`flat-${idx}`}>
+                  <div className={`transfers-row${item.status === 'cancelled' ? ' cancelled' : ''}`}>
+                    <div className="tr-datetime">
+                      <span className="tr-date">Day {item.day} · {fmtDate(item.date)}</span>
+                      <span className="tr-time">{item.time}</span>
+                      {item.city && <span className="tr-city">{item.city}</span>}
+                    </div>
+                    <div className="tr-info">
+                      <span className="tr-name">{item.name}</span>
+                      {(item.from_location || item.to_location) && (
+                        <span className="tr-route">{item.from_location || '?'} → {item.to_location || '?'}</span>
+                      )}
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {item.pax_label && <span className="tr-meta">{item.pax_label}</span>}
+                        <span className="itin-type-badge transfer">Transfer</span>
+                      </div>
+                    </div>
+                    <div className="tr-driver">
+                      {item.driver_name
+                        ? <><span className="tr-driver-name">👤 {item.driver_name}</span>{item.driver_phone && <span className="tr-driver-phone">{item.driver_phone}</span>}</>
+                        : <span className="tr-driver-empty">—</span>}
+                    </div>
+                    <div className="tr-status">
+                      <span className={`itin-status-badge status-${item.status || 'requested'}`}>
+                        {STATUS_LABELS[item.status || 'requested']}
+                      </span>
+                    </div>
+                    <div className="tr-cost">{fmtCost(item.cost)}</div>
+                    <div className="tr-actions">
+                      <button className="tr-menu-btn" onClick={(e) => { e.stopPropagation(); setOpenFlatMenu(openFlatMenu === flatKey ? null : flatKey); setOpenContractMenu(null) }}>⋮</button>
+                      {openFlatMenu === flatKey && (
+                        <div className="tr-menu" onClick={(e) => e.stopPropagation()}>
+                          {item.status !== 'confirmed' && <button className="tr-menu-item" onClick={() => markFlatStatus(item, 'confirmed')}>✅ Mark Confirmed</button>}
+                          {item.status !== 'done'      && <button className="tr-menu-item" onClick={() => markFlatStatus(item, 'done')}>✔ Mark Done</button>}
+                          <button className="tr-menu-item" onClick={() => startEditFlat(item)}>✏️ Edit</button>
+                          {item.status !== 'cancelled' && <button className="tr-menu-item danger" onClick={() => markFlatStatus(item, 'cancelled')}>✕ Cancel</button>}
+                          {item.status === 'cancelled' && <button className="tr-menu-item" onClick={() => markFlatStatus(item, 'requested')}>↺ Restore</button>}
+                          <button className="tr-menu-item danger" onClick={() => deleteFlat(item.dayIndex, item.transferIndex, item.name)}>🗑️ Delete</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {isEditing && (
+                    <div className="tr-inline-edit">
+                      <div className="tr-edit-grid">
+                        <div><label className="tr-edit-label">Time</label><input type="time" className="tr-edit-input" value={editFlatForm.time} onChange={(e) => setEditFlatForm((f) => ({ ...f, time: e.target.value }))} /></div>
+                        <div><label className="tr-edit-label">Status</label>
+                          <select className="tr-edit-input" value={editFlatForm.status} onChange={(e) => setEditFlatForm((f) => ({ ...f, status: e.target.value }))}>
+                            {STATUSES.filter((s) => s.value !== 'all').map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                          </select>
+                        </div>
+                        <div><label className="tr-edit-label">From (Pickup)</label><input className="tr-edit-input" value={editFlatForm.from_location} onChange={(e) => setEditFlatForm((f) => ({ ...f, from_location: e.target.value }))} /></div>
+                        <div><label className="tr-edit-label">To (Dropoff)</label><input className="tr-edit-input" value={editFlatForm.to_location} onChange={(e) => setEditFlatForm((f) => ({ ...f, to_location: e.target.value }))} /></div>
+                        <div><label className="tr-edit-label">Driver name</label><input className="tr-edit-input" value={editFlatForm.driver_name} onChange={(e) => setEditFlatForm((f) => ({ ...f, driver_name: e.target.value }))} /></div>
+                        <div><label className="tr-edit-label">Driver phone</label><input className="tr-edit-input" value={editFlatForm.driver_phone} onChange={(e) => setEditFlatForm((f) => ({ ...f, driver_phone: e.target.value }))} /></div>
+                        <div style={{ gridColumn: '1 / -1' }}><label className="tr-edit-label">Notes</label><textarea className="tr-edit-input" rows={2} value={editFlatForm.notes} onChange={(e) => setEditFlatForm((f) => ({ ...f, notes: e.target.value }))} /></div>
+                      </div>
+                      <div className="tr-edit-actions">
+                        <button className="btn btn-success" onClick={() => saveEditFlat(item)}>Save</button>
+                        <button className="btn btn-outline" onClick={() => setEditingFlatKey(null)}>Cancel</button>
+                      </div>
+                    </div>
                   )}
-                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {item.pax_label && <span className="tr-meta">{item.pax_label}</span>}
-                    <span className={`itin-type-badge ${item.type}`}>
-                      {item.type === 'transfer' ? 'Transfer' : 'Bus'}
-                    </span>
+                  {editingFlatKey !== flatKey && item.notes && <div className="tr-notes-row">📝 {item.notes}</div>}
+                </div>
+              )
+            }
+
+            // kind === 'contract'
+            const c = item
+            const isExpandedC = expanded.has(c.id)
+            const contractTotal = (Number(c.cost_per_day) || 0) * (Number(c.days_hired) || 0)
+            const isEditingC = editingContractId === c.id
+            return (
+              <div key={`contract-${c.id}`} className="contract-card">
+                {/* Contract header row */}
+                <div className={`contract-header${c.status === 'cancelled' ? ' cancelled' : ''}`}>
+                  <button className="contract-expand-btn" onClick={() => toggleExpand(c.id)} title={isExpandedC ? 'Collapse' : 'Expand'}>
+                    {isExpandedC ? '▾' : '▸'}
+                  </button>
+                  <div className="contract-header-info">
+                    <span className="contract-name">{c.name}</span>
+                    {c.pax_label && <span className="tr-meta">{c.pax_label}</span>}
+                    <span className="itin-type-badge transport">Transport</span>
+                  </div>
+                  <div className="contract-header-meta">
+                    <span className="contract-days">{c.days_hired} {c.days_hired === 1 ? 'day' : 'days'}</span>
+                    <span className="contract-rate">{fmtCost(c.cost_per_day)}/day</span>
+                    <span className="contract-total">{fmtCost(contractTotal)} total</span>
+                  </div>
+                  {c.driver_name && (
+                    <div className="tr-driver" style={{ flex: '0 0 auto' }}>
+                      <span className="tr-driver-name">👤 {c.driver_name}</span>
+                      {c.driver_phone && <span className="tr-driver-phone">{c.driver_phone}</span>}
+                    </div>
+                  )}
+                  <div className="tr-status">
+                    <span className={`itin-status-badge status-${c.status || 'requested'}`}>{STATUS_LABELS[c.status || 'requested']}</span>
+                  </div>
+                  <div className="tr-actions">
+                    <button className="tr-menu-btn" onClick={(e) => { e.stopPropagation(); setOpenContractMenu(openContractMenu === c.id ? null : c.id); setOpenFlatMenu(null) }}>⋮</button>
+                    {openContractMenu === c.id && (
+                      <div className="tr-menu" onClick={(e) => e.stopPropagation()}>
+                        {c.status !== 'confirmed' && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'confirmed')}>✅ Mark Confirmed</button>}
+                        {c.status !== 'done'      && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'done')}>✔ Mark Done</button>}
+                        <button className="tr-menu-item" onClick={() => startEditContract(c)}>✏️ Edit Contract</button>
+                        {c.status !== 'cancelled' && <button className="tr-menu-item danger" onClick={() => markContractStatus(c.id, 'cancelled')}>✕ Cancel</button>}
+                        {c.status === 'cancelled' && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'requested')}>↺ Restore</button>}
+                        <button className="tr-menu-item danger" onClick={() => deleteContract(c.id, c.name)}>🗑️ Delete</button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Driver */}
-                <div className="tr-driver">
-                  {item.driver_name ? (
-                    <>
-                      <span className="tr-driver-name">👤 {item.driver_name}</span>
-                      {item.driver_phone && (
-                        <span className="tr-driver-phone">{item.driver_phone}</span>
-                      )}
-                    </>
-                  ) : (
-                    <span className="tr-driver-empty">—</span>
-                  )}
-                </div>
-
-                {/* Status badge */}
-                <div className="tr-status">
-                  <span className={`itin-status-badge status-${item.status || 'requested'}`}>
-                    {STATUS_LABELS[item.status || 'requested']}
-                  </span>
-                </div>
-
-                {/* Cost */}
-                <div className="tr-cost">{fmtCost(item.cost)}</div>
-
-                {/* ⋮ Menu */}
-                <div className="tr-actions">
-                  <button
-                    className="tr-menu-btn"
-                    title="Actions"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setOpenMenuIdx(openMenuIdx === idx ? null : idx)
-                    }}
-                  >⋮</button>
-
-                  {openMenuIdx === idx && (
-                    <div className="tr-menu" onClick={(e) => e.stopPropagation()}>
-                      {item.status !== 'confirmed' && (
-                        <button className="tr-menu-item" onClick={() => markStatus(item, 'confirmed')}>
-                          ✅ Mark Confirmed
-                        </button>
-                      )}
-                      {item.status !== 'done' && (
-                        <button className="tr-menu-item" onClick={() => markStatus(item, 'done')}>
-                          ✔ Mark Done
-                        </button>
-                      )}
-                      <button className="tr-menu-item" onClick={() => startEdit(item, idx)}>
-                        ✏️ Edit
-                      </button>
-                      {item.status !== 'cancelled' && (
-                        <button
-                          className="tr-menu-item danger"
-                          onClick={() => markStatus(item, 'cancelled')}
-                        >
-                          ✕ Cancel
-                        </button>
-                      )}
-                      {item.status === 'cancelled' && (
-                        <button className="tr-menu-item" onClick={() => markStatus(item, 'requested')}>
-                          ↺ Restore
-                        </button>
-                      )}
-                      <button
-                        className="tr-menu-item danger"
-                        onClick={() => deleteTransfer(item.dayIndex, item.transferIndex, item.name)}
-                      >
-                        🗑️ Delete
-                      </button>
+                {/* Contract inline edit */}
+                {isEditingC && (
+                  <div className="tr-inline-edit">
+                    <div className="tr-edit-grid">
+                      <div><label className="tr-edit-label">Days Hired</label><input type="number" className="tr-edit-input" min="1" value={editContractForm.days_hired} onChange={(e) => setEditContractForm((f) => ({ ...f, days_hired: e.target.value }))} /></div>
+                      <div><label className="tr-edit-label">Cost / Day (€)</label><input type="number" className="tr-edit-input" min="0" value={editContractForm.cost_per_day} onChange={(e) => setEditContractForm((f) => ({ ...f, cost_per_day: e.target.value }))} /></div>
+                      <div><label className="tr-edit-label">Driver Name</label><input className="tr-edit-input" value={editContractForm.driver_name} onChange={(e) => setEditContractForm((f) => ({ ...f, driver_name: e.target.value }))} /></div>
+                      <div><label className="tr-edit-label">Driver Phone</label><input className="tr-edit-input" value={editContractForm.driver_phone} onChange={(e) => setEditContractForm((f) => ({ ...f, driver_phone: e.target.value }))} /></div>
+                      <div><label className="tr-edit-label">Status</label>
+                        <select className="tr-edit-input" value={editContractForm.status} onChange={(e) => setEditContractForm((f) => ({ ...f, status: e.target.value }))}>
+                          {STATUSES.filter((s) => s.value !== 'all').map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}><label className="tr-edit-label">Notes</label><textarea className="tr-edit-input" rows={2} value={editContractForm.notes} onChange={(e) => setEditContractForm((f) => ({ ...f, notes: e.target.value }))} /></div>
                     </div>
-                  )}
-                </div>
+                    <div className="tr-edit-actions">
+                      <button className="btn btn-success" onClick={() => saveEditContract(c.id)}>Save</button>
+                      <button className="btn btn-outline" onClick={() => setEditingContractId(null)}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+
+                {c.notes && !isEditingC && <div className="tr-notes-row">📝 {c.notes}</div>}
+
+                {/* Expanded movements */}
+                {isExpandedC && (
+                  <div className="contract-movements">
+                    {(c.movements || []).length === 0 && addingMovementFor !== c.id && (
+                      <div className="contract-movements-empty">No movements yet — add stops below.</div>
+                    )}
+                    {(c.movements || []).map((mov) => {
+                      const movKey = `${c.id}-${mov.id}`
+                      const isEditingMov = editingMovementKey === movKey
+                      const movRow = itinerary[mov.dayIdx]
+                      return (
+                        <div key={mov.id} className="contract-movement-row">
+                          {isEditingMov ? (
+                            <div className="tr-inline-edit" style={{ margin: '0.25rem 0' }}>
+                              <div className="tr-edit-grid">
+                                <div><label className="tr-edit-label">Day</label>
+                                  <select className="tr-edit-input" value={editMovementForm.dayIdx} onChange={(e) => setEditMovementForm((f) => ({ ...f, dayIdx: e.target.value }))}>
+                                    <option value="">— Select day —</option>
+                                    {itinerary.map((row, i) => <option key={i} value={i}>Day {row.day} · {fmtDate(row.date)}</option>)}
+                                  </select>
+                                </div>
+                                <div><label className="tr-edit-label">Time</label><input type="time" className="tr-edit-input" value={editMovementForm.time} onChange={(e) => setEditMovementForm((f) => ({ ...f, time: e.target.value }))} /></div>
+                                <div><label className="tr-edit-label">From</label><input className="tr-edit-input" value={editMovementForm.from_location} onChange={(e) => setEditMovementForm((f) => ({ ...f, from_location: e.target.value }))} /></div>
+                                <div><label className="tr-edit-label">To</label><input className="tr-edit-input" value={editMovementForm.to_location} onChange={(e) => setEditMovementForm((f) => ({ ...f, to_location: e.target.value }))} /></div>
+                              </div>
+                              <div className="tr-edit-actions">
+                                <button className="btn btn-success" onClick={() => saveEditMovement(c.id, mov.id)}>Save</button>
+                                <button className="btn btn-outline" onClick={() => setEditingMovementKey(null)}>Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="mov-datetime">
+                                <span className="tr-date">Day {(movRow?.day ?? (mov.dayIdx + 1))} · {fmtDate(mov.date)}</span>
+                                <span className="tr-time">{mov.time}</span>
+                              </div>
+                              <div className="mov-route">
+                                {mov.from_location || '?'} → {mov.to_location || '?'}
+                              </div>
+                              <div className="mov-actions">
+                                <button className="mov-btn" title="Edit" onClick={() => startEditMovement(c.id, mov)}>✏️</button>
+                                <button className="mov-btn danger" title="Delete" onClick={() => deleteMovement(c.id, mov.id)}>🗑️</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )
+                    })}
+
+                    {/* Add movement form */}
+                    {addingMovementFor === c.id ? (
+                      <div className="add-movement-form">
+                        <div className="tr-edit-grid">
+                          <div><label className="tr-edit-label">Day</label>
+                            <select className="tr-edit-input" value={movementForm.dayIdx} onChange={(e) => setMovementForm((f) => ({ ...f, dayIdx: e.target.value }))}>
+                              <option value="">— Select day —</option>
+                              {itinerary.map((row, i) => <option key={i} value={i}>Day {row.day} · {fmtDate(row.date)}{row.city ? ` · ${row.city}` : ''}</option>)}
+                            </select>
+                          </div>
+                          <div><label className="tr-edit-label">Time</label><input type="time" className="tr-edit-input" value={movementForm.time} onChange={(e) => setMovementForm((f) => ({ ...f, time: e.target.value }))} /></div>
+                          <div><label className="tr-edit-label">From (Pickup)</label><input className="tr-edit-input" placeholder="e.g. Hotel Kenzi" value={movementForm.fromLocation} onChange={(e) => setMovementForm((f) => ({ ...f, fromLocation: e.target.value }))} /></div>
+                          <div><label className="tr-edit-label">To (Dropoff)</label><input className="tr-edit-input" placeholder="e.g. Ouarzazate" value={movementForm.toLocation} onChange={(e) => setMovementForm((f) => ({ ...f, toLocation: e.target.value }))} /></div>
+                        </div>
+                        <div className="tr-edit-actions">
+                          <button className="btn btn-success" disabled={movementForm.dayIdx === ''} onClick={() => addMovement(c.id)}>Add Movement</button>
+                          <button className="btn btn-outline" onClick={() => { setAddingMovementFor(null); setMovementForm(EMPTY_MOVEMENT_FORM) }}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button className="add-movement-btn" onClick={() => { setAddingMovementFor(c.id); setMovementForm(EMPTY_MOVEMENT_FORM) }}>
+                        + Add Movement
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-
-              {/* Inline edit form */}
-              {editingIdx === idx && (
-                <div className="tr-inline-edit">
-                  <div className="tr-edit-grid">
-                    <div>
-                      <label className="tr-edit-label">Time</label>
-                      <input
-                        type="time"
-                        className="tr-edit-input"
-                        value={editForm.time}
-                        onChange={(e) => setEditForm((f) => ({ ...f, time: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <label className="tr-edit-label">Status</label>
-                      <select
-                        className="tr-edit-input"
-                        value={editForm.status}
-                        onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
-                      >
-                        {STATUSES.filter((s) => s.value !== 'all').map((s) => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="tr-edit-label">From (Pickup)</label>
-                      <input
-                        className="tr-edit-input"
-                        placeholder="e.g. Marrakech Airport"
-                        value={editForm.from_location}
-                        onChange={(e) => setEditForm((f) => ({ ...f, from_location: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <label className="tr-edit-label">To (Dropoff)</label>
-                      <input
-                        className="tr-edit-input"
-                        placeholder="e.g. Hotel Kenzi Menara"
-                        value={editForm.to_location}
-                        onChange={(e) => setEditForm((f) => ({ ...f, to_location: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <label className="tr-edit-label">Driver name</label>
-                      <input
-                        className="tr-edit-input"
-                        placeholder="Driver name"
-                        value={editForm.driver_name}
-                        onChange={(e) => setEditForm((f) => ({ ...f, driver_name: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <label className="tr-edit-label">Driver phone</label>
-                      <input
-                        className="tr-edit-input"
-                        placeholder="+212 6xx xxx xxx"
-                        value={editForm.driver_phone}
-                        onChange={(e) => setEditForm((f) => ({ ...f, driver_phone: e.target.value }))}
-                      />
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label className="tr-edit-label">Notes</label>
-                      <textarea
-                        className="tr-edit-input"
-                        rows={2}
-                        placeholder="Special instructions, pickup details…"
-                        value={editForm.notes}
-                        onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="tr-edit-actions">
-                    <button className="btn btn-success" onClick={() => saveEdit(item)}>Save</button>
-                    <button className="btn btn-outline" onClick={cancelEdit}>Cancel</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Notes display in view mode */}
-              {editingIdx !== idx && item.notes && (
-                <div className="tr-notes-row">📝 {item.notes}</div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
