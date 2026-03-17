@@ -11,6 +11,43 @@ import HotelsTab from '../components/HotelsTab'
 import ActivitiesTab from '../components/ActivitiesTab'
 import Toast from '../components/Toast'
 
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+function BookingDetailSkeleton() {
+  return (
+    <div style={{ pointerEvents: 'none' }}>
+      {/* Summary card */}
+      <div className="booking-card">
+        <div className="bc-header">
+          <div className="bc-header-left">
+            <div className="skel skel-bc-name" />
+            <div className="bc-meta-line">
+              <div className="skel skel-bc-chip" />
+              <div className="skel skel-bc-chip" />
+              <div className="skel skel-bc-badge" />
+            </div>
+          </div>
+          <div className="skel skel-bc-btn" />
+        </div>
+        <div className="bc-info-grid">
+          {[1,2,3,4].map((n) => (
+            <div key={n} className="bc-info-cell">
+              <div className="skel skel-bc-label" />
+              <div className="skel skel-bc-val" />
+            </div>
+          ))}
+        </div>
+        <div style={{ height: 40 }} />
+      </div>
+      {/* Tab bar */}
+      <div className="bd-tabs" style={{ gap: 8, marginTop: 16 }}>
+        {[1,2,3,4].map((n) => <div key={n} className="skel skel-bc-tab" />)}
+      </div>
+      {/* Content area */}
+      <div className="skel skel-bc-content" />
+    </div>
+  )
+}
+
 const normalizeBooking = (data) => ({
   ...data,
   check_in: data.check_in || '',
@@ -205,7 +242,7 @@ export default function BookingDetail() {
 
       <div className="container">
         {loading ? (
-          <div className="loading">Loading booking...</div>
+          <BookingDetailSkeleton />
         ) : !booking ? (
           <div className="loading">Booking not found.</div>
         ) : (

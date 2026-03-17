@@ -23,6 +23,7 @@ const CATEGORY_LABELS = {
 export default function ReferenceData() {
   const [searchParams] = useSearchParams()
   const [items, setItems] = useState([])
+  const [loadingItems, setLoadingItems] = useState(true)
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'all')
   const [search, setSearch] = useState('')
   const [cityFilter, setCityFilter] = useState('')
@@ -32,7 +33,9 @@ export default function ReferenceData() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   // Load reference data on mount
-  useEffect(() => { loadReferenceData().then(setItems) }, [])
+  useEffect(() => {
+    loadReferenceData().then((data) => { setItems(data); setLoadingItems(false) })
+  }, [])
 
   // Sync tab when sidebar link changes the URL
   useEffect(() => {
@@ -224,7 +227,15 @@ export default function ReferenceData() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loadingItems ? (
+                [1,2,3,4,5,6,7,8].map((n) => (
+                  <tr key={n} style={{ pointerEvents: 'none' }}>
+                    {[100, 70, 80, 60, 50, 90, 40, 60, 0].map((w, i) => (
+                      <td key={i}>{w > 0 && <div className="skel skel-td" style={{ width: w }} />}</td>
+                    ))}
+                  </tr>
+                ))
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>
                     No items match your filters.
@@ -265,7 +276,7 @@ export default function ReferenceData() {
         </div>
 
         <div className="ref-footer">
-          Showing {filtered.length} of {items.length} items
+          {loadingItems ? 'Loading…' : `Showing ${filtered.length} of ${items.length} items`}
         </div>
       </div>
 

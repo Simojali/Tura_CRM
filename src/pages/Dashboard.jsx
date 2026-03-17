@@ -78,6 +78,53 @@ const CameraIcon = () => (
 
 const ACTIVITY_ICONS = [MountainIcon, WaveIcon, BusIcon, CameraIcon]
 
+// ── Skeleton card ─────────────────────────────────────────────────────────────
+function BookingCardSkeleton() {
+  return (
+    <div className="bk-card bk-card-skel">
+      <div className="bk-card-inner">
+        <div className="bk-client">
+          <div className="skel skel-name" />
+          <div className="bk-chips"><div className="skel skel-chip" /></div>
+          <div className="bk-chips"><div className="skel skel-chip2" /></div>
+        </div>
+        <div className="bk-vdiv" />
+        <div className="bk-dates">
+          <div className="bk-dates-row">
+            <div className="skel skel-date" />
+            <div style={{ width: 22, height: 22 }} className="skel" style={{ borderRadius: '50%', width: 22, height: 22 }} />
+            <div className="skel skel-date" />
+          </div>
+        </div>
+        <div className="bk-vdiv" />
+        <div className="bk-section" style={{ minWidth: 110 }}>
+          <div className="skel skel-label" />
+          <div className="skel skel-val" />
+        </div>
+        <div className="bk-vdiv" />
+        <div className="bk-section" style={{ minWidth: 120 }}>
+          <div className="skel skel-label" />
+          <div className="skel skel-badge" />
+        </div>
+        <div className="bk-vdiv" />
+        <div className="bk-section" style={{ minWidth: 190 }}>
+          <div className="bk-balance-row">
+            <div>
+              <div className="skel skel-label" />
+              <div className="skel skel-bal" />
+            </div>
+            <div className="bk-balance-sep" />
+            <div>
+              <div className="skel skel-label" />
+              <div className="skel skel-badge" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [bookings,    setBookings]    = useState([])
@@ -209,7 +256,7 @@ export default function Dashboard() {
       <div className="container">
       <div className="booking-list" style={{ padding: 0, maxWidth: 1120, margin: '0 auto' }}>
         {loading ? (
-          <div className="loading">Loading bookings…</div>
+          [1,2,3].map((n) => <BookingCardSkeleton key={n} />)
         ) : bookings.length === 0 ? (
           <div className="loading">No bookings yet. Click "+ New Booking" to get started.</div>
         ) : (

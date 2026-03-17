@@ -2811,3 +2811,37 @@ tbody tr:hover {
 .bk-dots-menu-danger { color: #dc2626; }
 .bk-dots-menu-danger:hover { background: #fef2f2; color: #dc2626; }
 .bk-dots-menu-divider { height: 1px; background: var(--color-border); margin: 2px 0; }
+
+/* ── Skeleton loader ─────────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+.skel {
+  background: linear-gradient(90deg, #e8ede8 25%, #d8e0d8 50%, #e8ede8 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 5px;
+}
+/* Booking card skeleton */
+.bk-card-skel { pointer-events: none; }
+.skel-name    { height: 14px; width: 140px; margin-bottom: 8px; }
+.skel-chip    { height: 10px; width: 90px; margin-bottom: 5px; }
+.skel-chip2   { height: 10px; width: 70px; }
+.skel-date    { height: 28px; width: 28px; border-radius: 4px; }
+.skel-label   { height: 8px;  width: 60px; margin-bottom: 6px; }
+.skel-val     { height: 14px; width: 70px; }
+.skel-badge   { height: 22px; width: 80px; border-radius: 20px; }
+.skel-bal     { height: 14px; width: 55px; }
+/* Reference table skeleton */
+.skel-td      { height: 13px; border-radius: 4px; }
+
+/* ── BookingDetail skeleton ──────────────────────────────────────────────────── */
+.skel-bc-name    { height: 20px; width: 200px; margin-bottom: 10px; }
+.skel-bc-chip    { height: 12px; width: 80px; border-radius: 20px; display: inline-block; margin-right: 8px; }
+.skel-bc-badge   { height: 22px; width: 90px; border-radius: 20px; display: inline-block; }
+.skel-bc-btn     { height: 34px; width: 60px; border-radius: 6px; }
+.skel-bc-label   { height: 9px;  width: 80px; margin-bottom: 6px; }
+.skel-bc-val     { height: 14px; width: 130px; }
+.skel-bc-tab     { height: 36px; width: 110px; border-radius: 8px; }
+.skel-bc-content { height: 280px; border-radius: 10px; margin-top: 2px; }
