@@ -304,7 +304,7 @@ export default function TransfersTab({ booking: _booking, itinerary, contracts =
               className="btn btn-outline"
               onClick={() => { setShowAddForm(true); setAddType('contract'); setEditingFlatKey(null); setEditingContractId(null) }}
             >
-              + Contract
+              + Transport
             </button>
           </div>
         </div>
@@ -395,7 +395,7 @@ export default function TransfersTab({ booking: _booking, itinerary, contracts =
             </>
           ) : (
             <>
-              <div className="tab-add-form-title">Add Daily Transport Contract</div>
+              <div className="tab-add-form-title">Add Daily Transport</div>
               <div className="tab-add-field wide">
                 <label>Transport Provider</label>
                 <select className="tr-edit-input" value={contractForm.refId}
@@ -441,7 +441,7 @@ export default function TransfersTab({ booking: _booking, itinerary, contracts =
                   onChange={(e) => setContractForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
               <div className="tab-add-actions">
-                <button className="btn btn-success" disabled={!contractForm.refId || !contractForm.daysHired} onClick={addContract}>Save Contract</button>
+                <button className="btn btn-success" disabled={!contractForm.refId || !contractForm.daysHired} onClick={addContract}>Save</button>
                 <button className="btn btn-outline" onClick={() => { setShowAddForm(false); setContractForm(EMPTY_CONTRACT_FORM) }}>Cancel</button>
               </div>
             </>
@@ -578,7 +578,7 @@ export default function TransfersTab({ booking: _booking, itinerary, contracts =
                       <div className="tr-menu" onClick={(e) => e.stopPropagation()}>
                         {c.status !== 'confirmed' && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'confirmed')}>✅ Mark Confirmed</button>}
                         {c.status !== 'done'      && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'done')}>✔ Mark Done</button>}
-                        <button className="tr-menu-item" onClick={() => startEditContract(c)}>✏️ Edit Contract</button>
+                        <button className="tr-menu-item" onClick={() => startEditContract(c)}>✏️ Edit</button>
                         {c.status !== 'cancelled' && <button className="tr-menu-item danger" onClick={() => markContractStatus(c.id, 'cancelled')}>✕ Cancel</button>}
                         {c.status === 'cancelled' && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'requested')}>↺ Restore</button>}
                         <button className="tr-menu-item danger" onClick={() => deleteContract(c.id, c.name)}>🗑️ Delete</button>

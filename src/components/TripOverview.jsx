@@ -1,9 +1,8 @@
 import { CITIES } from '../lib/referenceData'
 import { computeDayCost } from '../lib/itineraryUtils'
-import CostCalculations from './CostCalculations'
 import { fmtDate, fmtDateLong, fmtCost, fmtRooms, nextDay, statusLabel } from '../lib/formatters'
 
-export default function TripOverview({ booking, itinerary, contracts = [], onSave }) {
+export default function TripOverview({ booking, itinerary, contracts = [], hotels = [], onSave }) {
 
   // ── City change: clears hotel / activities / transfers for that day ───
   const handleCityChange = (index, city) => {
@@ -89,9 +88,13 @@ export default function TripOverview({ booking, itinerary, contracts = [], onSav
         <div className="to-day-cards">
           {itinerary.map((row, i) => {
             const timeline = buildTimeline(row, i)
-            const dayCost = computeDayCost(row, contracts, i)
-            const checkin = row.hotel_checkin || row.date || ''
-            const checkout = row.hotel_checkout || getAutoCheckout(i)
+            const dayCost = computeDayCost(row, contracts, i, hotels)
+            const hotelEntry = hotels.find((h) => row.date && row.date >= h.checkin && row.date < h.checkout)
+            const displayHotel = hotelEntry
+              ? { hotel_id: hotelEntry.ref_id, hotel_name: hotelEntry.name, hotel_tier: hotelEntry.tier, hotel_cost: hotelEntry.cost_per_night, hotel_status: hotelEntry.status, hotel_confirmation_ref: hotelEntry.confirmation_ref, hotel_checkin: hotelEntry.checkin, hotel_checkout: hotelEntry.checkout }
+              : row
+            const checkin = displayHotel.hotel_checkin || row.date || ''
+            const checkout = displayHotel.hotel_checkout || getAutoCheckout(i)
             const rooms = fmtRooms(booking)
 
             return (
@@ -117,26 +120,26 @@ export default function TripOverview({ booking, itinerary, contracts = [], onSav
 
                 {/* ── Hotel Section ── */}
                 <div className="to-hotel-section">
-                  {row.hotel_id ? (
+                  {displayHotel.hotel_id ? (
                     <div className="itin-hotel-card">
                       <div className="itin-hotel-name">
-                        {row.hotel_name}
-                        <span className={`itin-status-badge status-${row.hotel_status || 'requested'}`}>
-                          {statusLabel(row.hotel_status)}
+                        {displayHotel.hotel_name}
+                        <span className={`itin-status-badge status-${displayHotel.hotel_status || 'requested'}`}>
+                          {statusLabel(displayHotel.hotel_status)}
                         </span>
                       </div>
-                      {row.hotel_tier && (
-                        <div className="itin-hotel-tier">{row.hotel_tier}</div>
+                      {displayHotel.hotel_tier && (
+                        <div className="itin-hotel-tier">{displayHotel.hotel_tier}</div>
                       )}
                       <div className="itin-hotel-rooms">
                         {fmtDate(checkin)} → {fmtDate(checkout)}
                         {rooms && ` · ${rooms}`}
                         <span className="itin-item-cost" style={{ marginLeft: '0.5rem' }}>
-                          {fmtCost(row.hotel_cost)}/night
+                          {fmtCost(displayHotel.hotel_cost)}/night
                         </span>
                       </div>
-                      {row.hotel_confirmation_ref && (
-                        <div className="to-hotel-ref">Ref: {row.hotel_confirmation_ref}</div>
+                      {displayHotel.hotel_confirmation_ref && (
+                        <div className="to-hotel-ref">Ref: {displayHotel.hotel_confirmation_ref}</div>
                       )}
                     </div>
                   ) : (
@@ -192,8 +195,6 @@ export default function TripOverview({ booking, itinerary, contracts = [], onSav
         </div>
       )}
 
-      {/* ── Cost Analysis at the bottom ── */}
-      <CostCalculations booking={booking} itinerary={itinerary} contracts={contracts} />
     </div>
   )
 }

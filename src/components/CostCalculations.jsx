@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { computeTotals, getDefaultMarkup } from '../lib/itineraryUtils'
 import { CLIENT_TYPES } from '../lib/constants'
 
-export default function CostCalculations({ booking, itinerary, contracts = [] }) {
+export default function CostCalculations({ booking, itinerary, contracts = [], hotels = [] }) {
   const [markup, setMarkup] = useState(() => getDefaultMarkup(booking.client_type))
 
   // Refresh default markup when client_type changes
@@ -10,7 +10,7 @@ export default function CostCalculations({ booking, itinerary, contracts = [] })
     setMarkup(getDefaultMarkup(booking.client_type))
   }, [booking.client_type])
 
-  const totals = computeTotals(itinerary, booking, contracts)
+  const totals = computeTotals(itinerary, booking, contracts, hotels)
   const groupPrice = Number(booking.group_price_eur) || 0
   const suggestedPrice = totals.grandTotal * (1 + markup / 100)
   const pl = groupPrice - totals.grandTotal

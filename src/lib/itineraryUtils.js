@@ -72,8 +72,8 @@ export function reconcileItinerary(saved, booking) {
  */
 function normalizeStored(raw) {
   if (!raw) return null
-  if (Array.isArray(raw)) return { rows: raw, contracts: [] }
-  return { rows: raw.rows ?? [], contracts: raw.contracts ?? [] }
+  if (Array.isArray(raw)) return { rows: raw, contracts: [], hotels: [] }
+  return { rows: raw.rows ?? [], contracts: raw.contracts ?? [], hotels: raw.hotels ?? [] }
 }
 
 /** Read saved itinerary from Supabase (or localStorage in mock mode). Returns { rows, contracts } or null. */
@@ -94,9 +94,9 @@ export async function loadItinerary(bookingId) {
   }
 }
 
-/** Persist itinerary rows + contracts to Supabase (or localStorage in mock mode). */
-export async function saveItinerary(bookingId, rows, contracts = []) {
-  const blob = { rows, contracts }
+/** Persist itinerary rows + contracts + hotels to Supabase (or localStorage in mock mode). */
+export async function saveItinerary(bookingId, rows, contracts = [], hotels = []) {
+  const blob = { rows, contracts, hotels }
   if (isSupabaseConfigured) {
     await supabase
       .from('itinerary_rows')
@@ -111,8 +111,9 @@ export async function saveItinerary(bookingId, rows, contracts = []) {
  * hotel_cost + all activity costs + all transfer costs
  * + cost_per_day for each transport contract that has at least one movement on this day (display only — grand total is handled separately in computeTotals).
  */
-export function computeDayCost(row, contracts = [], rowIndex = -1) {
-  const hotel = Number(row.hotel_cost) || 0
+export function computeDayCost(row, contracts = [], rowIndex = -1, hotels = []) {
+  const matchedHotel = hotels.find((h) => row.date && row.date >= h.checkin && row.date < h.checkout)
+  const hotelCost = matchedHotel ? (Number(matchedHotel.cost_per_night) || 0) : (Number(row.hotel_cost) || 0)
   const activities = (row.activities || []).reduce((sum, a) => sum + (Number(a.cost) || 0), 0)
   const transfers = (row.transfers || []).reduce((sum, t) => sum + (Number(t.cost) || 0), 0)
   const contractCost = rowIndex >= 0
@@ -120,20 +121,24 @@ export function computeDayCost(row, contracts = [], rowIndex = -1) {
         .filter((c) => (c.movements || []).some((m) => m.dayIdx === rowIndex))
         .reduce((sum, c) => sum + (Number(c.cost_per_day) || 0), 0)
     : 0
-  return hotel + activities + transfers + contractCost
+  return hotelCost + activities + transfers + contractCost
 }
 
 /**
  * Aggregate totals across all rows + transport contracts.
  * Returns { hotelTotal, activityTotal, transferTotal, grandTotal, costPerPerson }
  */
-export function computeTotals(rows, booking, contracts = []) {
+export function computeTotals(rows, booking, contracts = [], hotels = []) {
   let hotelTotal = 0
   let activityTotal = 0
   let transferTotal = 0
 
+  if (hotels.length > 0) {
+    hotelTotal = hotels.reduce((sum, h) => sum + (Number(h.cost_per_night) || 0) * (Number(h.nights) || 0), 0)
+  }
+
   rows.forEach((row) => {
-    hotelTotal += Number(row.hotel_cost) || 0
+    if (hotels.length === 0) hotelTotal += Number(row.hotel_cost) || 0
     activityTotal += (row.activities || []).reduce((sum, a) => sum + (Number(a.cost) || 0), 0)
     transferTotal += (row.transfers || []).reduce((sum, t) => sum + (Number(t.cost) || 0), 0)
   })

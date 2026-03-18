@@ -9,6 +9,7 @@ import TripOverview from '../components/TripOverview'
 import TransfersTab from '../components/TransfersTab'
 import HotelsTab from '../components/HotelsTab'
 import ActivitiesTab from '../components/ActivitiesTab'
+import CostCalculations from '../components/CostCalculations'
 import Toast from '../components/Toast'
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -80,6 +81,7 @@ export default function BookingDetail() {
   const [booking, setBooking] = useState(null)
   const [itinerary, setItinerary] = useState([])
   const [contracts, setContracts] = useState([])
+  const [hotels, setHotels] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [showEditModal, setShowEditModal] = useState(searchParams.get('edit') === 'true')
@@ -87,12 +89,12 @@ export default function BookingDetail() {
 
   // ── Tab counts (derived from itinerary + contracts) ─────────────────
   const transferCount = itinerary.reduce((n, r) => n + (r.transfers?.length || 0), 0) + contracts.length
-  const hotelCount    = itinerary.filter((r) => r.hotel_id).length
+  const hotelCount    = hotels.length || itinerary.filter((r) => r.hotel_id).length
   const activityCount = itinerary.reduce((n, r) => n + (r.activities?.length || 0), 0)
 
   const TABS = [
     {
-      key: 'overview', label: 'Overview',
+      key: 'overview', label: 'Itinerary Overview',
       icon: (
         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
           <rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/>
@@ -123,6 +125,14 @@ export default function BookingDetail() {
         </svg>
       ),
     },
+    {
+      key: 'costs', label: 'Cost Analysis',
+      icon: (
+        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><path d="M12 6v2m0 8v2M8.5 9.5A3.5 3.5 0 0112 8c1.93 0 3.5 1.12 3.5 2.5S13.93 13 12 13s-3.5 1.12-3.5 2.5S10.07 18 12 18a3.5 3.5 0 003.5-1.5"/>
+        </svg>
+      ),
+    },
   ]
 
   const fetchBooking = useCallback(async () => {
@@ -136,6 +146,7 @@ export default function BookingDetail() {
         const saved = await loadItinerary(id)
         setItinerary(reconcileItinerary(saved?.rows ?? null, b))
         setContracts(saved?.contracts ?? [])
+        setHotels(saved?.hotels ?? [])
       }
       setLoading(false)
       return
@@ -156,6 +167,7 @@ export default function BookingDetail() {
       const saved = await loadItinerary(id)
       setItinerary(saved?.rows || initItinerary(b))
       setContracts(saved?.contracts || [])
+      setHotels(saved?.hotels || [])
     }
     setLoading(false)
   }, [id])
@@ -167,14 +179,18 @@ export default function BookingDetail() {
   // ── Shared itinerary save handler ──
   const handleItinerarySave = async (rows) => {
     setItinerary(rows)
-    await saveItinerary(id, rows, contracts)
+    await saveItinerary(id, rows, contracts, hotels)
     setToast({ message: 'Itinerary saved', type: 'success' })
   }
 
-  // ── Contracts save handler ──
   const handleContractsSave = async (newContracts) => {
     setContracts(newContracts)
-    await saveItinerary(id, itinerary, newContracts)
+    await saveItinerary(id, itinerary, newContracts, hotels)
+  }
+
+  const handleHotelsSave = async (newHotels) => {
+    setHotels(newHotels)
+    await saveItinerary(id, itinerary, contracts, newHotels)
   }
 
   const handleSave = async (formData) => {
@@ -285,6 +301,7 @@ export default function BookingDetail() {
                 booking={booking}
                 itinerary={itinerary}
                 contracts={contracts}
+                hotels={hotels}
                 onSave={handleItinerarySave}
               />
             )}
@@ -303,7 +320,9 @@ export default function BookingDetail() {
               <HotelsTab
                 booking={booking}
                 itinerary={itinerary}
+                hotels={hotels}
                 onSave={handleItinerarySave}
+                onSaveHotels={handleHotelsSave}
               />
             )}
 
@@ -312,6 +331,15 @@ export default function BookingDetail() {
                 booking={booking}
                 itinerary={itinerary}
                 onSave={handleItinerarySave}
+              />
+            )}
+
+            {activeTab === 'costs' && (
+              <CostCalculations
+                booking={booking}
+                itinerary={itinerary}
+                contracts={contracts}
+                hotels={hotels}
               />
             )}
           </>

@@ -92,7 +92,7 @@ function BookingCardSkeleton() {
         <div className="bk-dates">
           <div className="bk-dates-row">
             <div className="skel skel-date" />
-            <div style={{ width: 22, height: 22 }} className="skel" style={{ borderRadius: '50%', width: 22, height: 22 }} />
+            <div className="skel" style={{ borderRadius: '50%', width: 22, height: 22 }} />
             <div className="skel skel-date" />
           </div>
         </div>
