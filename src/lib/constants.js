@@ -1,5 +1,5 @@
 export const PROVIDERS = [
-  'Ruta Tours',
+  'Tura Hub',
   '10k tours',
   'Aroon y JENEY',
   'YourTtou',

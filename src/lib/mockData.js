@@ -22,7 +22,7 @@ export const MOCK_BOOKINGS = [
     paid: 1700,
     invoice: 'FAC-2025-0081',
     booking_status: 'Confirmed',
-    provider: 'Ruta Tours',
+    provider: 'Tura Hub',
     client_type: 'direct',
     special_request: 'Vegetarian meals required for all guests.',
     created_at: '2025-05-01T10:00:00Z',

@@ -80,7 +80,7 @@ export default function Sidebar() {
       <div className="sidebar-logo">
         <span className="sidebar-logo-icon">🦅</span>
         <div className="sidebar-logo-text">
-          <span className="sidebar-logo-name">Ruta Tours</span>
+          <span className="sidebar-logo-name">Tura Hub</span>
           <span className="sidebar-logo-sub">CRM Platform</span>
         </div>
       </div>

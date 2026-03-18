@@ -33,7 +33,7 @@ export default function Login() {
         <div className="login-logo">
           <span className="login-logo-icon">🦅</span>
           <div className="login-logo-text">
-            <span className="login-logo-name">Ruta Tours</span>
+            <span className="login-logo-name">Tura Hub</span>
             <span className="login-logo-sub">CRM Platform</span>
           </div>
         </div>
