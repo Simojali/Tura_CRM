@@ -21,6 +21,8 @@ const EMPTY_FORM = {
   price_unit: 'per night',
   pax_label: '',
   notes: '',
+  group_price: '',
+  capacity: '',
 }
 
 export default function ReferenceItemModal({ item, onClose, onSave }) {
@@ -41,6 +43,8 @@ export default function ReferenceItemModal({ item, onClose, onSave }) {
         price_unit: item.price_unit || '',
         pax_label: item.pax_label || '',
         notes: item.notes || '',
+        group_price: item.group_price != null ? String(item.group_price) : '',
+        capacity: item.capacity != null ? String(item.capacity) : '',
       })
     }
   }, [item])
@@ -57,6 +61,8 @@ export default function ReferenceItemModal({ item, onClose, onSave }) {
         next.price_single = ''
         next.price_double = ''
         next.price_triple = ''
+        next.group_price = ''
+        next.capacity = ''
       }
       return next
     })
@@ -65,6 +71,7 @@ export default function ReferenceItemModal({ item, onClose, onSave }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     const isHotel = form.category === 'hotel'
+    const isTransferOrTransport = form.category === 'transfer' || form.category === 'transport'
     onSave({
       category: form.category,
       subcategory: form.subcategory || null,
@@ -78,6 +85,8 @@ export default function ReferenceItemModal({ item, onClose, onSave }) {
       price_unit: form.price_unit || null,
       pax_label: !isHotel ? (form.pax_label || null) : null,
       notes: form.notes || null,
+      group_price: isTransferOrTransport ? (form.group_price !== '' ? Number(form.group_price) : null) : null,
+      capacity: isTransferOrTransport ? (form.capacity !== '' ? Number(form.capacity) : null) : null,
     })
   }
 
@@ -209,7 +218,7 @@ export default function ReferenceItemModal({ item, onClose, onSave }) {
               ) : (
                 <>
                   <div className="form-group">
-                    <label>Price (EUR) *</label>
+                    <label>{(form.category === 'transfer' || form.category === 'transport') ? 'Private Price (EUR) *' : 'Price (EUR) *'}</label>
                     <input
                       name="price"
                       type="number"
@@ -230,6 +239,34 @@ export default function ReferenceItemModal({ item, onClose, onSave }) {
                       ))}
                     </select>
                   </div>
+
+                  {(form.category === 'transfer' || form.category === 'transport') && (
+                    <>
+                      <div className="form-group">
+                        <label>Group Price (EUR/person)</label>
+                        <input
+                          name="group_price"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={form.group_price}
+                          onChange={handleChange}
+                          placeholder="Leave empty to auto-calculate"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Capacity (seats)</label>
+                        <input
+                          name="capacity"
+                          type="number"
+                          min="1"
+                          value={form.capacity}
+                          onChange={handleChange}
+                          placeholder="e.g. 17"
+                        />
+                      </div>
+                    </>
+                  )}
                 </>
               )}
 

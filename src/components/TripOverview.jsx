@@ -45,6 +45,7 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
         cost: t.cost,
         status: t.status,
         paxLabel: t.pax_label,
+        pricingMode: t.pricing_mode,
         fromLocation: t.from_location,
         toLocation: t.to_location,
       })
@@ -62,6 +63,7 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
           showCost: idx === 0,          // only first movement shows the price
           status: c.status,
           paxLabel: c.pax_label,
+          pricingMode: c.pricing_mode,
           fromLocation: mov.from_location,
           toLocation: mov.to_location,
           driverName: c.driver_name,
@@ -173,6 +175,11 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
                         {(item.kind === 'transfer' || item.kind === 'transport') && (
                           <span className={`itin-type-badge ${item.kind}`}>
                             {item.kind === 'transfer' ? 'Transfer' : 'Transport'}
+                          </span>
+                        )}
+                        {(item.kind === 'transfer' || item.kind === 'transport') && (
+                          <span className={`itin-type-badge ${(item.pricingMode || 'private') === 'group' ? 'group-mode' : 'private-mode'}`}>
+                            {(item.pricingMode || 'private') === 'group' ? 'Group' : 'Private'}
                           </span>
                         )}
                         {item.status && (

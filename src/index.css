@@ -1453,6 +1453,63 @@ tbody tr:hover {
   background: #fef3c7;
   color: #92400e;
 }
+.itin-type-badge.private-mode {
+  background: #f0fdf4;
+  color: #166534;
+}
+.itin-type-badge.group-mode {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* ── Pricing mode toggle ── */
+.pricing-mode-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.pricing-mode-toggle .toggle-btn {
+  flex: 1;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  background: var(--color-bg);
+  color: var(--color-text-light);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pricing-mode-toggle .toggle-btn.active {
+  background: var(--color-primary);
+  color: white;
+}
+.pricing-mode-toggle .toggle-btn:not(.active):hover {
+  background: var(--color-bg-hover, #f3f4f6);
+}
+
+/* Cost preview in add form */
+.cost-preview {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.4rem 0;
+}
+.cost-detail {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  margin-left: 0.25rem;
+}
+
+/* Reference data group price */
+.ref-group-price {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  margin-left: 0.25rem;
+}
 
 .itin-remove-btn {
   background: none;

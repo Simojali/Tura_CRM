@@ -145,7 +145,12 @@ export default function ReferenceData() {
       maximumFractionDigits: 2,
     })
     const unit = item.price_unit ? ` / ${item.price_unit}` : ''
-    return `${p}${unit}`
+    const base = `${p}${unit}`
+    if (item.group_price != null) {
+      const gp = Number(item.group_price).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+      return <span>{base} <span className="ref-group-price">(Group: {gp}/pp)</span></span>
+    }
+    return base
   }
 
   return (
@@ -222,6 +227,7 @@ export default function ReferenceData() {
                 <th>Tier</th>
                 <th>Price (EUR) — S · D · T for hotels</th>
                 <th>Pax</th>
+                <th>Capacity</th>
                 <th>Notes</th>
                 <th style={{ width: '70px' }}></th>
               </tr>
@@ -230,14 +236,14 @@ export default function ReferenceData() {
               {loadingItems ? (
                 [1,2,3,4,5,6,7,8].map((n) => (
                   <tr key={n} style={{ pointerEvents: 'none' }}>
-                    {[100, 70, 80, 60, 50, 90, 40, 60, 0].map((w, i) => (
+                    {[100, 70, 80, 60, 50, 90, 40, 40, 60, 0].map((w, i) => (
                       <td key={i}>{w > 0 && <div className="skel skel-td" style={{ width: w }} />}</td>
                     ))}
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>
                     No items match your filters.
                   </td>
                 </tr>
@@ -255,6 +261,7 @@ export default function ReferenceData() {
                     <td>{item.tier || '—'}</td>
                     <td className="ref-price">{formatPrice(item)}</td>
                     <td>{item.pax_label || '—'}</td>
+                    <td>{item.capacity || '—'}</td>
                     <td className="ref-notes">{item.notes || '—'}</td>
                     <td>
                       <button
