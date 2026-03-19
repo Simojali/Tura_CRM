@@ -1,8 +1,16 @@
 import { useState, useEffect, useMemo } from 'react'
 import { MOCK_REFERENCE_DATA } from '../lib/referenceData'
+import { ACTIVITY_STATUS_LABELS } from '../lib/constants'
 import { fmtDate, fmtCost } from '../lib/formatters'
 
 const activities = MOCK_REFERENCE_DATA.filter((r) => r.category === 'activity')
+
+const STATUSES = [
+  { value: 'all',       label: 'All' },
+  { value: 'requested', label: 'Requested' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
 
 // Group activities by city for <optgroup> display
 const activitiesByCity = activities.reduce((acc, a) => {
@@ -19,7 +27,8 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
   const [editingIdx, setEditingIdx] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [showAddForm, setShowAddForm] = useState(false)
-  const [addForm, setAddForm] = useState({ dayIdx: '', actId: '', time: '09:00' })
+  const [addForm, setAddForm] = useState({ dayIdx: '', actId: '', time: '09:00', status: 'requested' })
+  const [statusFilter, setStatusFilter] = useState('all')
 
   // Close ⋮ menu on outside click
   useEffect(() => {
@@ -74,13 +83,18 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
       if (current.some((a) => a.id === actId)) return row  // duplicate guard
       return {
         ...row,
-        activities: [...current, { id: act.id, name: act.name, cost, price_unit: act.price_unit, time }]
+        activities: [...current, { id: act.id, name: act.name, cost, price_unit: act.price_unit, time, status: addForm.status }]
           .sort((a, b) => a.time.localeCompare(b.time)),
       }
     })
     onSave(updated)
     setShowAddForm(false)
-    setAddForm({ dayIdx: '', actId: '', time: '09:00' })
+    setAddForm({ dayIdx: '', actId: '', time: '09:00', status: 'requested' })
+  }
+
+  const markStatus = (item, status) => {
+    updateActivity(item.rowIndex, item.actIndex, { status })
+    setOpenMenuIdx(null)
   }
 
   const deleteActivity = (item) => {
@@ -98,14 +112,14 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
   }
 
   const startEdit = (item, idx) => {
-    setEditForm({ time: item.time || '09:00', actId: item.id || '' })
+    setEditForm({ time: item.time || '09:00', actId: item.id || '', status: item.status || 'requested' })
     setEditingIdx(idx)
     setOpenMenuIdx(null)
   }
 
   const saveEdit = (item) => {
     const act = activities.find((a) => a.id === editForm.actId)
-    const changes = { time: editForm.time }
+    const changes = { time: editForm.time, status: editForm.status }
     if (act && editForm.actId !== item.id) {
       const cost = calcActivityCost(act)
       Object.assign(changes, { id: act.id, name: act.name, cost, price_unit: act.price_unit })
@@ -115,6 +129,22 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
   }
 
   const cancelEdit = () => { setEditingIdx(null); setEditForm({}) }
+
+  // ── Status filtering ─────────────────────────────────────────────────
+  const filteredActivities = useMemo(() =>
+    statusFilter === 'all'
+      ? allActivities
+      : allActivities.filter((a) => (a.status || 'requested') === statusFilter),
+    [allActivities, statusFilter]
+  )
+
+  const statusCounts = useMemo(() => {
+    const c = { all: allActivities.length }
+    for (const s of ['requested', 'confirmed', 'cancelled']) {
+      c[s] = allActivities.filter((a) => (a.status || 'requested') === s).length
+    }
+    return c
+  }, [allActivities])
 
   // Activity options for add form: filter by day's city or show all grouped
   const selectedDayForAdd = addForm.dayIdx !== '' ? itinerary[Number(addForm.dayIdx)] : null
@@ -148,6 +178,21 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
           >
             + Add Activity
           </button>
+        </div>
+        {/* Status filter pills */}
+        <div className="activities-filter-bar">
+          {STATUSES.map((s) => {
+            const cnt = statusCounts[s.value] || 0
+            return (
+              <button
+                key={s.value}
+                className={`activities-filter-btn${statusFilter === s.value ? ' active' : ''}`}
+                onClick={() => setStatusFilter(s.value)}
+              >
+                {s.label}{cnt > 0 && <span className="at-filter-count">{cnt}</span>}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -198,6 +243,20 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
             </select>
           </div>
 
+          {/* Status */}
+          <div className="tab-add-field">
+            <label>Status</label>
+            <select
+              className="tr-edit-input"
+              value={addForm.status}
+              onChange={(e) => setAddForm((f) => ({ ...f, status: e.target.value }))}
+            >
+              {STATUSES.filter((s) => s.value !== 'all').map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="tab-add-actions">
             <button
               className="btn btn-success"
@@ -206,7 +265,7 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
             >Save</button>
             <button className="btn btn-outline" onClick={() => {
               setShowAddForm(false)
-              setAddForm({ dayIdx: '', actId: '', time: '09:00' })
+              setAddForm({ dayIdx: '', actId: '', time: '09:00', status: 'requested' })
             }}>Cancel</button>
           </div>
         </div>
@@ -226,10 +285,11 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
             <span className="at-col-activity">Activity</span>
             <span className="at-col-unit">Price Unit</span>
             <span className="at-col-cost">Cost</span>
+            <span className="at-col-status">Status</span>
             <span className="at-col-menu" />
           </div>
 
-          {allActivities.map((item, idx) => (
+          {filteredActivities.map((item, idx) => (
             <div key={idx}>
               {/* Main row */}
               <div className="activities-row">
@@ -257,6 +317,13 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
                 {/* Cost */}
                 <div className="at-cost">{fmtCost(item.cost)}</div>
 
+                {/* Status */}
+                <div className="at-status">
+                  <span className={`itin-status-badge status-${item.status || 'requested'}`}>
+                    {ACTIVITY_STATUS_LABELS[item.status || 'requested']}
+                  </span>
+                </div>
+
                 {/* ⋮ Menu */}
                 <div className="at-actions">
                   <button
@@ -270,9 +337,29 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
 
                   {openMenuIdx === idx && (
                     <div className="at-menu" onClick={(e) => e.stopPropagation()}>
+                      {(item.status || 'requested') !== 'confirmed' && (
+                        <button className="at-menu-item" onClick={() => markStatus(item, 'confirmed')}>
+                          ✅ Mark Confirmed
+                        </button>
+                      )}
                       <button className="at-menu-item" onClick={() => startEdit(item, idx)}>
                         ✏️ Edit
                       </button>
+                      {(item.status || 'requested') === 'confirmed' && (
+                        <button className="at-menu-item" onClick={() => markStatus(item, 'requested')}>
+                          ↺ Reset to Requested
+                        </button>
+                      )}
+                      {(item.status || 'requested') !== 'cancelled' && (
+                        <button className="at-menu-item danger" onClick={() => markStatus(item, 'cancelled')}>
+                          ✕ Cancel
+                        </button>
+                      )}
+                      {(item.status || 'requested') === 'cancelled' && (
+                        <button className="at-menu-item" onClick={() => markStatus(item, 'requested')}>
+                          ↺ Restore
+                        </button>
+                      )}
                       <button className="at-menu-item danger" onClick={() => deleteActivity(item)}>
                         🗑️ Delete
                       </button>
@@ -315,6 +402,18 @@ export default function ActivitiesTab({ booking, itinerary, onSave }) {
                         value={editForm.time}
                         onChange={(e) => setEditForm((f) => ({ ...f, time: e.target.value }))}
                       />
+                    </div>
+                    <div>
+                      <label className="tr-edit-label">Status</label>
+                      <select
+                        className="tr-edit-input"
+                        value={editForm.status}
+                        onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
+                      >
+                        {STATUSES.filter((s) => s.value !== 'all').map((s) => (
+                          <option key={s.value} value={s.value}>{s.label}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div className="tr-edit-actions">

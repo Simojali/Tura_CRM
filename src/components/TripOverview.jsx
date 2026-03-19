@@ -36,6 +36,7 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
         name: a.name,
         cost: a.cost,
         priceUnit: a.price_unit,
+        status: a.status || 'requested',
       })
     })
     ;(row.transfers || []).forEach((t) => {

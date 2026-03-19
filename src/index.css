@@ -2538,6 +2538,53 @@ tbody tr:hover {
   color: var(--color-text-light);
 }
 
+.activities-filter-bar {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.activities-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 2rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.activities-filter-btn:hover { background: var(--color-bg); color: var(--color-text); }
+
+.activities-filter-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.at-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.25);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.activities-filter-btn:not(.active) .at-filter-count {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
 .activities-list {
   background: var(--color-card);
   border: 1px solid var(--color-border);
@@ -2547,7 +2594,7 @@ tbody tr:hover {
 .activities-list-header,
 .activities-row {
   display: grid;
-  grid-template-columns: 150px 100px 1fr 110px 70px 40px;
+  grid-template-columns: 150px 100px 1fr 110px 70px 85px 40px;
   align-items: center;
   gap: 0.75rem;
   padding: 0.65rem 1.25rem;
@@ -2576,6 +2623,7 @@ tbody tr:hover {
 .at-activity-name { font-weight: 500; }
 
 .at-cost { font-size: 0.875rem; font-weight: 500; }
+.at-status { display: flex; align-items: center; }
 
 .at-actions { position: relative; display: flex; justify-content: flex-end; }
 

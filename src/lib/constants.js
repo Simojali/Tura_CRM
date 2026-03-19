@@ -71,6 +71,12 @@ export const TRANSFER_STATUS_LABELS = {
   cancelled: 'Cancelled',
 }
 
+export const ACTIVITY_STATUS_LABELS = {
+  requested: 'Requested',
+  confirmed: 'Confirmed',
+  cancelled: 'Cancelled',
+}
+
 export const CLIENT_TYPES = [
   { value: 'direct',    label: 'Direct (B2C)',        markup: 35 },
   { value: 'agency',    label: 'Travel Agency (B2B)', markup: 25 },
