@@ -1,3 +1,5 @@
+import { supabase, isSupabaseConfigured } from './supabase'
+
 export const PROVIDERS = [
   'Tura Hub',
   '10k tours',
@@ -13,6 +15,38 @@ export const PROVIDERS = [
   'Branque Experience',
   'Houda viajes',
 ]
+
+/* ── Providers CRUD (Supabase-backed) ────────────────────── */
+export async function loadProviders() {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('providers').select('*').order('name')
+    if (!error && data) return data
+  }
+  return PROVIDERS.map((name, i) => ({ id: `prov-${i}`, name, email: null, phone: null, website: null, notes: null }))
+}
+
+export async function addProvider(provider) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('providers').insert(provider).select().single()
+    if (error) throw error
+    return data
+  }
+  return { id: `prov-${Date.now()}`, ...provider }
+}
+
+export async function updateProvider(id, updates) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('providers').update(updates).eq('id', id)
+    if (error) throw error
+  }
+}
+
+export async function deleteProvider(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('providers').delete().eq('id', id)
+    if (error) throw error
+  }
+}
 
 export const HOTEL_TYPES = [
   'Basic',

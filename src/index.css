@@ -1511,6 +1511,66 @@ tbody tr:hover {
   margin-left: 0.25rem;
 }
 
+/* ── Manage Dropdown ───────────────────────────────────────── */
+.manage-dropdown { position: relative; }
+.manage-dropdown-menu {
+  position: absolute; top: 100%; right: 0; z-index: 10;
+  background: white; border: 1px solid var(--color-border);
+  border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  min-width: 180px; overflow: hidden; margin-top: 4px;
+}
+.manage-dropdown-menu button {
+  display: block; width: 100%; padding: 0.6rem 1rem;
+  text-align: left; border: none; background: none;
+  font-size: 0.85rem; cursor: pointer; color: var(--color-text);
+}
+.manage-dropdown-menu button:hover { background: #f3f4f6; }
+
+/* ── Manage Modal Lists ────────────────────────────────────── */
+.manage-add-row {
+  display: flex; gap: 0.5rem; margin-bottom: 0.75rem;
+}
+.manage-add-row input {
+  flex: 1; padding: 0.45rem 0.65rem; border: 1px solid var(--color-border);
+  border-radius: 6px; font-size: 0.85rem;
+}
+.manage-error {
+  color: #dc2626; font-size: 0.8rem; margin: 0.25rem 0 0.5rem;
+}
+.manage-list {
+  max-height: 400px; overflow-y: auto;
+  border: 1px solid var(--color-border); border-radius: 8px;
+}
+.manage-list-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-border);
+}
+.manage-list-row:last-child { border-bottom: none; }
+.manage-list-row input {
+  flex: 1; padding: 0.35rem 0.5rem; border: 1px solid var(--color-border);
+  border-radius: 4px; font-size: 0.85rem;
+}
+.manage-list-name { flex: 1; font-size: 0.85rem; font-weight: 500; }
+.manage-list-actions { display: flex; gap: 0.25rem; }
+
+/* Provider-specific */
+.manage-provider-row { flex-wrap: wrap; }
+.manage-provider-row:not(:has(.manage-provider-form)) {
+  flex-direction: row; align-items: center;
+}
+.manage-provider-info { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; }
+.manage-provider-detail { font-size: 0.75rem; color: var(--color-text-light); }
+.manage-provider-form { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
+.manage-provider-form-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
+}
+.manage-provider-form-grid input,
+.manage-provider-form textarea {
+  padding: 0.4rem 0.6rem; border: 1px solid var(--color-border);
+  border-radius: 4px; font-size: 0.82rem; font-family: inherit;
+}
+.manage-provider-form-actions { display: flex; gap: 0.5rem; }
+
 .itin-remove-btn {
   background: none;
   border: none;

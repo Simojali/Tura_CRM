@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { generateBookingReference } from '../lib/constants'
+import { generateBookingReference, loadProviders } from '../lib/constants'
 import { loadItinerary, computeTotals, computeDays } from '../lib/itineraryUtils'
 import { MOCK_BOOKINGS } from '../lib/mockData'
 import { useAppContext } from '../lib/AppContext'
@@ -135,6 +135,7 @@ export default function Dashboard() {
   const [menuOpen,    setMenuOpen]    = useState(null)   // bookingId with dots menu open
   const [noteText,    setNoteText]    = useState('')
   const [noteSaving,  setNoteSaving]  = useState(false)
+  const [providers,   setProviders]   = useState([])
   const navigate = useNavigate()
   const { setBookingCount } = useAppContext()
 
@@ -183,7 +184,7 @@ export default function Dashboard() {
     setLoading(false)
   }, [setBookingCount])
 
-  useEffect(() => { fetchBookings() }, [fetchBookings])
+  useEffect(() => { fetchBookings(); loadProviders().then(setProviders) }, [fetchBookings])
 
   const handleCreateBooking = async (formData) => {
     const { count } = await supabase.from('bookings').select('*', { count: 'exact', head: true })
@@ -430,7 +431,7 @@ export default function Dashboard() {
       </div>
 
       {showModal && (
-        <NewBookingModal onClose={() => setShowModal(false)} onCreated={handleCreateBooking} />
+        <NewBookingModal onClose={() => setShowModal(false)} onCreated={handleCreateBooking} providers={providers} />
       )}
       {toast && (
         <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />

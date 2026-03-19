@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { getNextRefId, CITIES, TIERS, loadReferenceData, saveReferenceData } from '../lib/referenceData'
+import { getNextRefId, TIERS, loadReferenceData, saveReferenceData, loadCities } from '../lib/referenceData'
 import ReferenceItemModal from '../components/ReferenceItemModal'
+import ManageCitiesModal from '../components/ManageCitiesModal'
+import ManageProvidersModal from '../components/ManageProvidersModal'
 import Toast from '../components/Toast'
 
 const CATEGORY_TABS = [
@@ -20,6 +22,29 @@ const CATEGORY_LABELS = {
   transport: 'Transport',
 }
 
+/* ── Column config per tab ─────────────────────────────────── */
+const col = {
+  name:     (label = 'Name') => ({ key: 'name', label, render: (item) => <strong>{item.name}</strong> }),
+  category: { key: 'category', label: 'Category', render: (item) => (
+    <span className={`ref-cat-badge ref-cat-${item.category}`}>{CATEGORY_LABELS[item.category]}</span>
+  )},
+  subcategory: (label = 'Subcategory') => ({ key: 'subcategory', label }),
+  city:     { key: 'city', label: 'City' },
+  tier:     { key: 'tier', label: 'Tier' },
+  price:    (label = 'Price (EUR)') => ({ key: 'price', label, render: 'formatPrice', className: 'ref-price' }),
+  pax:      (label = 'Pax') => ({ key: 'pax_label', label }),
+  capacity: { key: 'capacity', label: 'Capacity' },
+  notes:    { key: 'notes', label: 'Notes', className: 'ref-notes' },
+}
+
+const COLUMN_CONFIG = {
+  all:      [col.name(),           col.category, col.subcategory(), col.city, col.price(),                         col.notes],
+  hotel:    [col.name(),           col.subcategory('Type'), col.city, col.tier, col.price('Price (EUR) — S · D · T'), col.notes],
+  transfer: [col.name('Route'),    col.subcategory('Type'), col.city, col.pax(), col.capacity, col.price(),         col.notes],
+  transport:[col.name('Vehicle / Route'), col.subcategory('Type'), col.pax('Seats'), col.capacity, col.price(),     col.notes],
+  activity: [col.name(),           col.subcategory('Type'), col.city, col.price(),                                  col.notes],
+}
+
 export default function ReferenceData() {
   const [searchParams] = useSearchParams()
   const [items, setItems] = useState([])
@@ -31,10 +56,15 @@ export default function ReferenceData() {
   const [modalItem, setModalItem] = useState(null) // null = closed, {} = new, {id,...} = edit
   const [toast, setToast] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [manageOpen, setManageOpen] = useState(false)
+  const [showCitiesModal, setShowCitiesModal] = useState(false)
+  const [showProvidersModal, setShowProvidersModal] = useState(false)
+  const [cities, setCities] = useState([])
 
-  // Load reference data on mount
+  // Load reference data + cities on mount
   useEffect(() => {
     loadReferenceData().then((data) => { setItems(data); setLoadingItems(false) })
+    loadCities().then((data) => setCities(data))
   }, [])
 
   // Sync tab when sidebar link changes the URL
@@ -157,9 +187,22 @@ export default function ReferenceData() {
     <>
       <div className="page-header">
         <h2>Reference Data</h2>
-        <button className="btn btn-success" onClick={() => setModalItem({})}>
-          + Add Item
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="manage-dropdown">
+            <button className="btn btn-outline" onClick={() => setManageOpen(!manageOpen)}>
+              Manage &#9662;
+            </button>
+            {manageOpen && (
+              <div className="manage-dropdown-menu">
+                <button onClick={() => { setManageOpen(false); setShowCitiesModal(true) }}>Manage Cities</button>
+                <button onClick={() => { setManageOpen(false); setShowProvidersModal(true) }}>Manage Providers</button>
+              </div>
+            )}
+          </div>
+          <button className="btn btn-success" onClick={() => setModalItem({})}>
+            + Add Item
+          </button>
+        </div>
       </div>
 
       <div className="container">
@@ -216,71 +259,64 @@ export default function ReferenceData() {
         </div>
 
         {/* Table */}
-        <div className="table-wrapper">
-          <table className="ref-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Subcategory</th>
-                <th>City</th>
-                <th>Tier</th>
-                <th>Price (EUR) — S · D · T for hotels</th>
-                <th>Pax</th>
-                <th>Capacity</th>
-                <th>Notes</th>
-                <th style={{ width: '70px' }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loadingItems ? (
-                [1,2,3,4,5,6,7,8].map((n) => (
-                  <tr key={n} style={{ pointerEvents: 'none' }}>
-                    {[100, 70, 80, 60, 50, 90, 40, 40, 60, 0].map((w, i) => (
-                      <td key={i}>{w > 0 && <div className="skel skel-td" style={{ width: w }} />}</td>
-                    ))}
+        {(() => {
+          const columns = COLUMN_CONFIG[activeTab] || COLUMN_CONFIG.all
+          const colCount = columns.length + 1 // +1 for action column
+          return (
+            <div className="table-wrapper">
+              <table className="ref-table">
+                <thead>
+                  <tr>
+                    {columns.map((c) => <th key={c.key}>{c.label}</th>)}
+                    <th style={{ width: '70px' }}></th>
                   </tr>
-                ))
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>
-                    No items match your filters.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((item) => (
-                  <tr key={item.id} onClick={() => setModalItem(item)}>
-                    <td><strong>{item.name}</strong></td>
-                    <td>
-                      <span className={`ref-cat-badge ref-cat-${item.category}`}>
-                        {CATEGORY_LABELS[item.category]}
-                      </span>
-                    </td>
-                    <td>{item.subcategory || '—'}</td>
-                    <td>{item.city || '—'}</td>
-                    <td>{item.tier || '—'}</td>
-                    <td className="ref-price">{formatPrice(item)}</td>
-                    <td>{item.pax_label || '—'}</td>
-                    <td>{item.capacity || '—'}</td>
-                    <td className="ref-notes">{item.notes || '—'}</td>
-                    <td>
-                      <button
-                        className="btn-icon btn-icon-danger"
-                        title="Delete"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(item)
-                        }}
-                      >
-                        &times;
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {loadingItems ? (
+                    [1,2,3,4,5,6,7,8].map((n) => (
+                      <tr key={n} style={{ pointerEvents: 'none' }}>
+                        {columns.map((c, i) => (
+                          <td key={i}><div className="skel skel-td" style={{ width: 60 + Math.random() * 40 }} /></td>
+                        ))}
+                        <td></td>
+                      </tr>
+                    ))
+                  ) : filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={colCount} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>
+                        No items match your filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((item) => (
+                      <tr key={item.id} onClick={() => setModalItem(item)}>
+                        {columns.map((c) => (
+                          <td key={c.key} className={c.className || ''}>
+                            {c.render
+                              ? (c.render === 'formatPrice' ? formatPrice(item) : c.render(item))
+                              : (item[c.key] || '—')}
+                          </td>
+                        ))}
+                        <td>
+                          <button
+                            className="btn-icon btn-icon-danger"
+                            title="Delete"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDelete(item)
+                            }}
+                          >
+                            &times;
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )
+        })()}
 
         <div className="ref-footer">
           {loadingItems ? 'Loading…' : `Showing ${filtered.length} of ${items.length} items`}
@@ -291,8 +327,24 @@ export default function ReferenceData() {
       {modalItem !== null && (
         <ReferenceItemModal
           item={modalItem.id ? modalItem : null}
+          cities={cities.map((c) => c.name)}
           onClose={() => setModalItem(null)}
           onSave={handleSave}
+        />
+      )}
+
+      {/* Manage Cities Modal */}
+      {showCitiesModal && (
+        <ManageCitiesModal
+          onClose={() => setShowCitiesModal(false)}
+          onUpdate={(list) => setCities(list)}
+        />
+      )}
+
+      {/* Manage Providers Modal */}
+      {showProvidersModal && (
+        <ManageProvidersModal
+          onClose={() => setShowProvidersModal(false)}
         />
       )}
 

@@ -1,6 +1,6 @@
 import BookingForm from './BookingForm'
 
-export default function NewBookingModal({ onClose, onCreated }) {
+export default function NewBookingModal({ onClose, onCreated, providers }) {
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) onClose()
   }
@@ -15,7 +15,7 @@ export default function NewBookingModal({ onClose, onCreated }) {
           </button>
         </div>
         <div className="modal-body">
-          <BookingForm onSubmit={onCreated} />
+          <BookingForm onSubmit={onCreated} providers={providers} />
         </div>
       </div>
     </div>

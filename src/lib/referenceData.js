@@ -16,6 +16,38 @@ export const CITIES = [
   'Casablanca', 'Rabat', 'Asilah', 'Ouzoud', 'Zagora', 'Agafay',
 ]
 
+/* ── Cities CRUD (Supabase-backed) ───────────────────────── */
+export async function loadCities() {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('cities').select('*').order('name')
+    if (!error && data) return data
+  }
+  return CITIES.map((name, i) => ({ id: `city-${i}`, name }))
+}
+
+export async function addCity(name) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.from('cities').insert({ name }).select().single()
+    if (error) throw error
+    return data
+  }
+  return { id: `city-${Date.now()}`, name }
+}
+
+export async function updateCity(id, name) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('cities').update({ name }).eq('id', id)
+    if (error) throw error
+  }
+}
+
+export async function deleteCity(id) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('cities').delete().eq('id', id)
+    if (error) throw error
+  }
+}
+
 export const TIERS = [
   { value: 'Basic', label: 'Basic (4-star)' },
   { value: 'Superior', label: 'Superior (3-star)' },

@@ -3,6 +3,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { MOCK_BOOKINGS } from '../lib/mockData'
 import { loadItinerary, saveItinerary, initItinerary, reconcileItinerary, computeDays } from '../lib/itineraryUtils'
+import { loadCities } from '../lib/referenceData'
+import { loadProviders } from '../lib/constants'
 import BookingSummaryCard from '../components/BookingSummaryCard'
 import BookingForm from '../components/BookingForm'
 import TripOverview from '../components/TripOverview'
@@ -86,6 +88,8 @@ export default function BookingDetail() {
   const [toast, setToast] = useState(null)
   const [showEditModal, setShowEditModal] = useState(searchParams.get('edit') === 'true')
   const [activeTab, setActiveTab] = useState('overview')
+  const [cities, setCities] = useState([])
+  const [providers, setProviders] = useState([])
 
   // ── Tab counts (derived from itinerary + contracts) ─────────────────
   const transferCount = itinerary.reduce((n, r) => n + (r.transfers?.length || 0), 0) + contracts.length
@@ -174,6 +178,8 @@ export default function BookingDetail() {
 
   useEffect(() => {
     fetchBooking()
+    loadCities().then((data) => setCities(data))
+    loadProviders().then((data) => setProviders(data))
   }, [fetchBooking])
 
   // ── Shared itinerary save handler ──
@@ -302,6 +308,7 @@ export default function BookingDetail() {
                 itinerary={itinerary}
                 contracts={contracts}
                 hotels={hotels}
+                cities={cities.map((c) => typeof c === 'string' ? c : c.name)}
                 onSave={handleItinerarySave}
               />
             )}
@@ -363,6 +370,7 @@ export default function BookingDetail() {
             <div className="modal-body">
               <BookingForm
                 initialData={booking}
+                providers={providers}
                 onSubmit={handleSave}
                 isDetail
               />

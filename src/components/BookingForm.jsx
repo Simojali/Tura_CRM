@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PROVIDERS, HOTEL_TYPES, RESERV_STATUSES, CLIENT_TYPES } from '../lib/constants'
+import { PROVIDERS as FALLBACK_PROVIDERS, HOTEL_TYPES, RESERV_STATUSES, CLIENT_TYPES } from '../lib/constants'
 import { computeDays } from '../lib/itineraryUtils'
 
 const EMPTY_FORM = {
@@ -27,7 +27,8 @@ const EMPTY_FORM = {
   special_request: '',
 }
 
-export default function BookingForm({ initialData, onSubmit, isDetail = false }) {
+export default function BookingForm({ initialData, providers: providersProp, onSubmit, isDetail = false }) {
+  const PROVIDERS = (providersProp || FALLBACK_PROVIDERS).map((p) => typeof p === 'string' ? p : p.name)
   const [form, setForm] = useState(initialData || EMPTY_FORM)
   const [saving, setSaving] = useState(false)
 

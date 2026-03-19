@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { REF_SUBCATEGORIES, CITIES, TIERS } from '../lib/referenceData'
+import { REF_SUBCATEGORIES, CITIES as FALLBACK_CITIES, TIERS } from '../lib/referenceData'
 
 const PRICE_UNIT_OPTIONS = {
   hotel: ['per night'],
@@ -25,7 +25,8 @@ const EMPTY_FORM = {
   capacity: '',
 }
 
-export default function ReferenceItemModal({ item, onClose, onSave }) {
+export default function ReferenceItemModal({ item, cities: citiesProp, onClose, onSave }) {
+  const CITIES = citiesProp || FALLBACK_CITIES
   const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {

@@ -1,8 +1,9 @@
-import { CITIES } from '../lib/referenceData'
+import { CITIES as FALLBACK_CITIES } from '../lib/referenceData'
 import { computeDayCost } from '../lib/itineraryUtils'
 import { fmtDate, fmtDateLong, fmtCost, fmtRooms, nextDay, statusLabel } from '../lib/formatters'
 
-export default function TripOverview({ booking, itinerary, contracts = [], hotels = [], onSave }) {
+export default function TripOverview({ booking, itinerary, contracts = [], hotels = [], cities: citiesProp, onSave }) {
+  const CITIES = citiesProp || FALLBACK_CITIES
 
   // ── City change: clears hotel / activities / transfers for that day ───
   const handleCityChange = (index, city) => {
