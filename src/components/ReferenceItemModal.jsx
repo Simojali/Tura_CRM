@@ -72,7 +72,7 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
   const handleSubmit = (e) => {
     e.preventDefault()
     const isHotel = form.category === 'hotel'
-    const isTransferOrTransport = form.category === 'transfer' || form.category === 'transport'
+    const isTransport = form.category === 'transport'
     onSave({
       category: form.category,
       subcategory: form.subcategory || null,
@@ -86,8 +86,8 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
       price_unit: form.price_unit || null,
       pax_label: !isHotel ? (form.pax_label || null) : null,
       notes: form.notes || null,
-      group_price: isTransferOrTransport ? (form.group_price !== '' ? Number(form.group_price) : null) : null,
-      capacity: isTransferOrTransport ? (form.capacity !== '' ? Number(form.capacity) : null) : null,
+      group_price: isTransport ? (form.group_price !== '' ? Number(form.group_price) : null) : null,
+      capacity: (form.category === 'transfer' || isTransport) ? (form.capacity !== '' ? Number(form.capacity) : null) : null,
     })
   }
 
@@ -219,7 +219,7 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
               ) : (
                 <>
                   <div className="form-group">
-                    <label>{(form.category === 'transfer' || form.category === 'transport') ? 'Private Price (EUR) *' : 'Price (EUR) *'}</label>
+                    <label>{form.category === 'transport' ? 'Private Price (EUR) *' : 'Price (EUR) *'}</label>
                     <input
                       name="price"
                       type="number"
@@ -242,31 +242,31 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
                   </div>
 
                   {(form.category === 'transfer' || form.category === 'transport') && (
-                    <>
-                      <div className="form-group">
-                        <label>Group Price (EUR/person)</label>
-                        <input
-                          name="group_price"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={form.group_price}
-                          onChange={handleChange}
-                          placeholder="Leave empty to auto-calculate"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Capacity (seats)</label>
-                        <input
-                          name="capacity"
-                          type="number"
-                          min="1"
-                          value={form.capacity}
-                          onChange={handleChange}
-                          placeholder="e.g. 17"
-                        />
-                      </div>
-                    </>
+                    <div className="form-group">
+                      <label>Capacity (seats)</label>
+                      <input
+                        name="capacity"
+                        type="number"
+                        min="1"
+                        value={form.capacity}
+                        onChange={handleChange}
+                        placeholder="e.g. 17"
+                      />
+                    </div>
+                  )}
+                  {form.category === 'transport' && (
+                    <div className="form-group">
+                      <label>Group Price (EUR/person)</label>
+                      <input
+                        name="group_price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.group_price}
+                        onChange={handleChange}
+                        placeholder="Leave empty to auto-calculate"
+                      />
+                    </div>
                   )}
                 </>
               )}

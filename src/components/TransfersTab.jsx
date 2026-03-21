@@ -13,7 +13,6 @@ const STATUSES = [
 
 const EMPTY_FLAT_FORM = {
   dayIdx: '', refId: '', time: '09:00',
-  pricingMode: 'private',
   status: 'requested', driverName: '', driverPhone: '',
   fromLocation: '', toLocation: '',
 }
@@ -144,21 +143,20 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
   }
 
   const addFlat = () => {
-    const { dayIdx, refId, time, pricingMode, status, driverName, driverPhone, fromLocation, toLocation } = flatForm
+    const { dayIdx, refId, time, status, driverName, driverPhone, fromLocation, toLocation } = flatForm
     if (dayIdx === '' || !refId) return
     const [category, id] = refId.split(':')
     const pool = category === 'transfer' ? refTransfers : refTransports
     const item = pool.find((r) => r.id === id)
     if (!item) return
-    const cost = calcCost(item, pricingMode)
+    const cost = item.price || 0
     const updated = itinerary.map((row, ri) => {
       if (ri !== Number(dayIdx)) return row
       return {
         ...row,
         transfers: [...(row.transfers || []), {
           id, name: item.name, cost, type: category,
-          pricing_mode: pricingMode, base_cost: item.price || 0,
-          group_price: item.group_price || null, capacity: item.capacity || null,
+          base_cost: item.price || 0,
           time, pax_label: item.pax_label || null, status,
           driver_name: driverName, driver_phone: driverPhone,
           from_location: fromLocation, to_location: toLocation, notes: '',
@@ -172,8 +170,8 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
 
   const startEditFlat = (item) => {
     setEditFlatForm({
+      refId: item.id ? `${item.type || 'transfer'}:${item.id}` : '',
       time: item.time || '', status: item.status || 'requested',
-      pricing_mode: item.pricing_mode || 'private',
       from_location: item.from_location || '', to_location: item.to_location || '',
       driver_name: item.driver_name || '', driver_phone: item.driver_phone || '',
       notes: item.notes || '',
@@ -182,12 +180,31 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
     setOpenFlatMenu(null)
   }
 
+  const handleEditFlatRefChange = (refId) => {
+    if (!refId) return
+    const [category, id] = refId.split(':')
+    const pool = category === 'transfer' ? refTransfers : refTransports
+    const ref = pool.find((r) => r.id === id)
+    if (!ref) return
+    setEditFlatForm((f) => ({ ...f, refId }))
+  }
+
   const saveEditFlat = (item) => {
-    const changes = { ...editFlatForm }
-    // Recalculate cost if pricing_mode changed and we have ref data
-    if (changes.pricing_mode && changes.pricing_mode !== (item.pricing_mode || 'private')) {
-      const ref = { price: item.base_cost || item.cost, group_price: item.group_price, capacity: item.capacity }
-      changes.cost = calcCost(ref, changes.pricing_mode)
+    const { refId, ...rest } = editFlatForm
+    const changes = { ...rest }
+    // Always resolve the reference item and update name/cost/etc
+    if (refId) {
+      const [category, id] = refId.split(':')
+      const pool = category === 'transfer' ? refTransfers : refTransports
+      const ref = pool.find((r) => r.id === id)
+      if (ref) {
+        changes.id = id
+        changes.name = ref.name
+        changes.cost = ref.price || 0
+        changes.base_cost = ref.price || 0
+        changes.pax_label = ref.pax_label || null
+        changes.type = category
+      }
     }
     updateFlat(item.dayIndex, item.transferIndex, changes)
     setEditingFlatKey(null)
@@ -229,7 +246,8 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
 
   const startEditContract = (c) => {
     setEditContractForm({
-      name: c.name, cost_per_day: c.cost_per_day, days_hired: c.days_hired,
+      ref_id: c.ref_id || '', name: c.name,
+      cost_per_day: c.cost_per_day, days_hired: c.days_hired,
       pricing_mode: c.pricing_mode || 'private',
       driver_name: c.driver_name || '', driver_phone: c.driver_phone || '',
       status: c.status || 'requested', notes: c.notes || '',
@@ -238,12 +256,35 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
     setOpenContractMenu(null)
   }
 
+  const handleEditContractRefChange = (refId) => {
+    const ref = refTransports.find((r) => r.id === refId)
+    if (!ref) return
+    setEditContractForm((f) => ({
+      ...f, ref_id: refId, name: ref.name,
+      cost_per_day: calcCost(ref, f.pricing_mode),
+    }))
+  }
+
   const saveEditContract = (contractId) => {
-    const changes = { ...editContractForm }
+    const { ref_id, ...rest } = editContractForm
+    const changes = { ...rest }
     const c = contracts.find((x) => x.id === contractId)
+    // Always resolve the reference item and update related fields
+    if (ref_id) {
+      const ref = refTransports.find((r) => r.id === ref_id)
+      if (ref) {
+        changes.ref_id = ref_id
+        changes.name = ref.name
+        changes.pax_label = ref.pax_label || null
+        changes.base_cost = ref.price || 0
+        changes.group_price = ref.group_price || null
+        changes.capacity = ref.capacity || null
+      }
+    }
     // Recalculate cost_per_day if pricing_mode changed
     if (c && changes.pricing_mode !== (c.pricing_mode || 'private')) {
-      const ref = { price: c.base_cost || c.cost_per_day, group_price: c.group_price, capacity: c.capacity }
+      const refData = ref_id ? refTransports.find((r) => r.id === ref_id) : null
+      const ref = refData || { price: c.base_cost || c.cost_per_day, group_price: c.group_price, capacity: c.capacity }
       changes.cost_per_day = calcCost(ref, changes.pricing_mode)
     }
     onSaveContracts(contracts.map((x) => x.id === contractId ? { ...x, ...changes } : x))
@@ -379,15 +420,6 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
             <>
               <div className="tab-add-form-title">Add Single Transfer / Service</div>
               <div className="tab-add-field">
-                <label>Pricing</label>
-                <div className="pricing-mode-toggle">
-                  <button type="button" className={`toggle-btn${flatForm.pricingMode === 'private' ? ' active' : ''}`}
-                    onClick={() => setFlatForm((f) => ({ ...f, pricingMode: 'private' }))}>Private</button>
-                  <button type="button" className={`toggle-btn${flatForm.pricingMode === 'group' ? ' active' : ''}`}
-                    onClick={() => setFlatForm((f) => ({ ...f, pricingMode: 'group' }))}>Group</button>
-                </div>
-              </div>
-              <div className="tab-add-field">
                 <label>Day</label>
                 <select className="tr-edit-input" value={flatForm.dayIdx}
                   onChange={(e) => setFlatForm((f) => ({ ...f, dayIdx: e.target.value, refId: '' }))}>
@@ -421,9 +453,8 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                     {fmtCost((() => {
                       const [, id] = flatForm.refId.split(':')
                       const ref = [...refTransfers, ...refTransports].find((r) => r.id === id)
-                      return calcCost(ref, flatForm.pricingMode)
+                      return ref?.price || 0
                     })())}
-                    {flatForm.pricingMode === 'group' && <span className="cost-detail"> ({guests} guests)</span>}
                   </span>
                 </div>
               )}
@@ -565,7 +596,6 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                       <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         {item.pax_label && <span className="tr-meta">{item.pax_label}</span>}
                         <span className="itin-type-badge transfer">Transfer</span>
-                        <span className={`itin-type-badge ${(item.pricing_mode || 'private') === 'group' ? 'group-mode' : 'private-mode'}`}>{(item.pricing_mode || 'private') === 'group' ? 'Group' : 'Private'}</span>
                       </div>
                     </div>
                     <div className="tr-driver">
@@ -596,19 +626,19 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                   {isEditing && (
                     <div className="tr-inline-edit">
                       <div className="tr-edit-grid">
+                        <div style={{ gridColumn: '1 / -1' }}><label className="tr-edit-label">Transfer / Service</label>
+                          <select className="tr-edit-input" value={editFlatForm.refId || ''} onChange={(e) => handleEditFlatRefChange(e.target.value)}>
+                            <option value="" disabled>— Select —</option>
+                            {refTransfers.map((r) => (
+                              <option key={`transfer:${r.id}`} value={`transfer:${r.id}`}>{r.name}{r.pax_label ? ` (${r.pax_label})` : ''}</option>
+                            ))}
+                          </select>
+                        </div>
                         <div><label className="tr-edit-label">Time</label><input type="time" className="tr-edit-input" value={editFlatForm.time} onChange={(e) => setEditFlatForm((f) => ({ ...f, time: e.target.value }))} /></div>
                         <div><label className="tr-edit-label">Status</label>
                           <select className="tr-edit-input" value={editFlatForm.status} onChange={(e) => setEditFlatForm((f) => ({ ...f, status: e.target.value }))}>
                             {STATUSES.filter((s) => s.value !== 'all').map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                           </select>
-                        </div>
-                        <div><label className="tr-edit-label">Pricing</label>
-                          <div className="pricing-mode-toggle">
-                            <button type="button" className={`toggle-btn${editFlatForm.pricing_mode === 'private' ? ' active' : ''}`}
-                              onClick={() => setEditFlatForm((f) => ({ ...f, pricing_mode: 'private' }))}>Private</button>
-                            <button type="button" className={`toggle-btn${editFlatForm.pricing_mode === 'group' ? ' active' : ''}`}
-                              onClick={() => setEditFlatForm((f) => ({ ...f, pricing_mode: 'group' }))}>Group</button>
-                          </div>
                         </div>
                         <div><label className="tr-edit-label">From (Pickup)</label><input className="tr-edit-input" value={editFlatForm.from_location} onChange={(e) => setEditFlatForm((f) => ({ ...f, from_location: e.target.value }))} /></div>
                         <div><label className="tr-edit-label">To (Dropoff)</label><input className="tr-edit-input" value={editFlatForm.to_location} onChange={(e) => setEditFlatForm((f) => ({ ...f, to_location: e.target.value }))} /></div>
@@ -678,6 +708,14 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                 {isEditingC && (
                   <div className="tr-inline-edit">
                     <div className="tr-edit-grid">
+                      <div style={{ gridColumn: '1 / -1' }}><label className="tr-edit-label">Transport</label>
+                        <select className="tr-edit-input" value={editContractForm.ref_id || ''} onChange={(e) => handleEditContractRefChange(e.target.value)}>
+                          <option value="" disabled>— Select transport —</option>
+                          {refTransports.map((r) => (
+                            <option key={r.id} value={r.id}>{r.name}{r.pax_label ? ` (${r.pax_label})` : ''}</option>
+                          ))}
+                        </select>
+                      </div>
                       <div><label className="tr-edit-label">Pricing</label>
                         <div className="pricing-mode-toggle">
                           <button type="button" className={`toggle-btn${editContractForm.pricing_mode === 'private' ? ' active' : ''}`}

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { MOCK_BOOKINGS } from '../lib/mockData'
@@ -90,6 +90,14 @@ export default function BookingDetail() {
   const [activeTab, setActiveTab] = useState('overview')
   const [cities, setCities] = useState([])
   const [providers, setProviders] = useState([])
+
+  // ── Refs to always have latest state in save handlers (avoids stale closures) ──
+  const itineraryRef = useRef(itinerary)
+  const contractsRef = useRef(contracts)
+  const hotelsRef    = useRef(hotels)
+  useEffect(() => { itineraryRef.current = itinerary }, [itinerary])
+  useEffect(() => { contractsRef.current = contracts }, [contracts])
+  useEffect(() => { hotelsRef.current    = hotels },    [hotels])
 
   // ── Tab counts (derived from itinerary + contracts) ─────────────────
   const transferCount = itinerary.reduce((n, r) => n + (r.transfers?.length || 0), 0) + contracts.length
@@ -183,20 +191,25 @@ export default function BookingDetail() {
   }, [fetchBooking])
 
   // ── Shared itinerary save handler ──
+  // Uses refs so each handler always reads the LATEST state of the other slices,
+  // preventing stale-closure overwrites when tabs save independently.
   const handleItinerarySave = async (rows) => {
     setItinerary(rows)
-    await saveItinerary(id, rows, contracts, hotels)
+    itineraryRef.current = rows
+    await saveItinerary(id, rows, contractsRef.current, hotelsRef.current)
     setToast({ message: 'Itinerary saved', type: 'success' })
   }
 
   const handleContractsSave = async (newContracts) => {
     setContracts(newContracts)
-    await saveItinerary(id, itinerary, newContracts, hotels)
+    contractsRef.current = newContracts
+    await saveItinerary(id, itineraryRef.current, newContracts, hotelsRef.current)
   }
 
   const handleHotelsSave = async (newHotels) => {
     setHotels(newHotels)
-    await saveItinerary(id, itinerary, contracts, newHotels)
+    hotelsRef.current = newHotels
+    await saveItinerary(id, itineraryRef.current, contractsRef.current, newHotels)
   }
 
   const handleSave = async (formData) => {
