@@ -47,6 +47,8 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
         cost: t.cost,
         status: t.status,
         paxLabel: t.capacity ? `${t.capacity} seats` : null,
+        isArrival: t.is_arrival,
+        isDeparture: t.is_departure,
         fromLocation: t.from_location,
         toLocation: t.to_location,
       })
@@ -65,6 +67,8 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
           status: c.status,
           paxLabel: c.capacity ? `${c.capacity} seats` : null,
           pricingMode: c.pricing_mode,
+          isArrival: mov.is_arrival,
+          isDeparture: mov.is_departure,
           fromLocation: mov.from_location,
           toLocation: mov.to_location,
           driverName: c.driver_name,
@@ -178,6 +182,8 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
                             {item.kind === 'transfer' ? 'Transfer' : 'Transport'}
                           </span>
                         )}
+                        {item.isArrival && <span className="itin-type-badge arrival">Arrival</span>}
+                        {item.isDeparture && <span className="itin-type-badge departure">Departure</span>}
                         {item.kind === 'transport' && (
                           <span className={`itin-type-badge ${(item.pricingMode || 'private') === 'group' ? 'group-mode' : 'private-mode'}`}>
                             {(item.pricingMode || 'private') === 'group' ? 'Group' : 'Private'}

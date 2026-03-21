@@ -14,7 +14,8 @@ const STATUSES = [
 const EMPTY_FLAT_FORM = {
   dayIdx: '', refId: '', time: '09:00',
   status: 'requested', driverName: '', driverPhone: '',
-  fromLocation: '', toLocation: '',
+  fromLocation: '', toLocation: '', notes: '',
+  isArrival: false, isDeparture: false,
 }
 
 const EMPTY_CONTRACT_FORM = {
@@ -24,7 +25,7 @@ const EMPTY_CONTRACT_FORM = {
   status: 'requested', notes: '',
 }
 
-const EMPTY_MOVEMENT_FORM = { dayIdx: '', time: '09:00', fromLocation: '', toLocation: '' }
+const EMPTY_MOVEMENT_FORM = { dayIdx: '', time: '09:00', fromLocation: '', toLocation: '', isArrival: false, isDeparture: false }
 
 function genId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -143,7 +144,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
   }
 
   const addFlat = () => {
-    const { dayIdx, refId, time, status, driverName, driverPhone, fromLocation, toLocation } = flatForm
+    const { dayIdx, refId, time, status, driverName, driverPhone, fromLocation, toLocation, notes, isArrival, isDeparture } = flatForm
     if (dayIdx === '' || !refId) return
     const [category, id] = refId.split(':')
     const pool = category === 'transfer' ? refTransfers : refTransports
@@ -158,8 +159,9 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
           id, name: item.name, cost, type: category,
           base_cost: item.price || 0,
           time, capacity: item.capacity || null, status,
+          is_arrival: isArrival, is_departure: isDeparture,
           driver_name: driverName, driver_phone: driverPhone,
-          from_location: fromLocation, to_location: toLocation, notes: '',
+          from_location: fromLocation, to_location: toLocation, notes,
         }].sort((a, b) => a.time.localeCompare(b.time)),
       }
     })
@@ -172,6 +174,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
     setEditFlatForm({
       refId: item.id ? `${item.type || 'transfer'}:${item.id}` : '',
       time: item.time || '', status: item.status || 'requested',
+      is_arrival: item.is_arrival || false, is_departure: item.is_departure || false,
       from_location: item.from_location || '', to_location: item.to_location || '',
       driver_name: item.driver_name || '', driver_phone: item.driver_phone || '',
       notes: item.notes || '',
@@ -293,13 +296,14 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
 
   // ── Movement CRUD ───────────────────────────────────────────────────
   const addMovement = (contractId) => {
-    const { dayIdx, time, fromLocation, toLocation } = movementForm
+    const { dayIdx, time, fromLocation, toLocation, isArrival, isDeparture } = movementForm
     if (dayIdx === '') return
     const row = itinerary[Number(dayIdx)]
     const newMov = {
       id: genId(), dayIdx: Number(dayIdx),
       date: row?.date || '', time,
       from_location: fromLocation, to_location: toLocation,
+      is_arrival: isArrival, is_departure: isDeparture,
     }
     onSaveContracts(contracts.map((c) => {
       if (c.id !== contractId) return c
@@ -322,18 +326,19 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
     setEditMovementForm({
       dayIdx: mov.dayIdx ?? '', time: mov.time || '',
       from_location: mov.from_location || '', to_location: mov.to_location || '',
+      is_arrival: mov.is_arrival || false, is_departure: mov.is_departure || false,
     })
     setEditingMovementKey(`${contractId}-${mov.id}`)
   }
 
   const saveEditMovement = (contractId, movementId) => {
-    const { dayIdx, time, from_location, to_location } = editMovementForm
+    const { dayIdx, time, from_location, to_location, is_arrival, is_departure } = editMovementForm
     const row = itinerary[Number(dayIdx)]
     onSaveContracts(contracts.map((c) => {
       if (c.id !== contractId) return c
       const movements = (c.movements || []).map((m) =>
         m.id !== movementId ? m
-          : { ...m, dayIdx: Number(dayIdx), date: row?.date || m.date, time, from_location, to_location }
+          : { ...m, dayIdx: Number(dayIdx), date: row?.date || m.date, time, from_location, to_location, is_arrival, is_departure }
       ).sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.time.localeCompare(b.time))
       return { ...c, movements }
     }))
@@ -469,6 +474,21 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                   onChange={(e) => setFlatForm((f) => ({ ...f, toLocation: e.target.value }))} />
               </div>
               <div className="tab-add-field">
+                <label>Transfer Type</label>
+                <div className="transfer-type-checkboxes">
+                  <label className="checkbox-label">
+                    <input type="checkbox" checked={flatForm.isArrival}
+                      onChange={(e) => setFlatForm((f) => ({ ...f, isArrival: e.target.checked }))} />
+                    Arrival
+                  </label>
+                  <label className="checkbox-label">
+                    <input type="checkbox" checked={flatForm.isDeparture}
+                      onChange={(e) => setFlatForm((f) => ({ ...f, isDeparture: e.target.checked }))} />
+                    Departure
+                  </label>
+                </div>
+              </div>
+              <div className="tab-add-field">
                 <label>Status</label>
                 <select className="tr-edit-input" value={flatForm.status}
                   onChange={(e) => setFlatForm((f) => ({ ...f, status: e.target.value }))}>
@@ -486,6 +506,11 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                 <label>Driver Phone</label>
                 <input className="tr-edit-input" placeholder="+212 6xx xxx xxx" value={flatForm.driverPhone}
                   onChange={(e) => setFlatForm((f) => ({ ...f, driverPhone: e.target.value }))} />
+              </div>
+              <div className="tab-add-field wide">
+                <label>Notes</label>
+                <textarea className="tr-edit-input" rows={2} placeholder="Special instructions..." value={flatForm.notes}
+                  onChange={(e) => setFlatForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
               <div className="tab-add-actions">
                 <button className="btn btn-success" disabled={flatForm.dayIdx === '' || !flatForm.refId} onClick={addFlat}>Save</button>
@@ -596,6 +621,8 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                       <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         {item.capacity && <span className="tr-meta">{item.capacity} seats</span>}
                         <span className="itin-type-badge transfer">Transfer</span>
+                        {item.is_arrival && <span className="itin-type-badge arrival">Arrival</span>}
+                        {item.is_departure && <span className="itin-type-badge departure">Departure</span>}
                       </div>
                     </div>
                     <div className="tr-driver">
@@ -642,6 +669,12 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                         </div>
                         <div><label className="tr-edit-label">From (Pickup)</label><input className="tr-edit-input" value={editFlatForm.from_location} onChange={(e) => setEditFlatForm((f) => ({ ...f, from_location: e.target.value }))} /></div>
                         <div><label className="tr-edit-label">To (Dropoff)</label><input className="tr-edit-input" value={editFlatForm.to_location} onChange={(e) => setEditFlatForm((f) => ({ ...f, to_location: e.target.value }))} /></div>
+                        <div><label className="tr-edit-label">Transfer Type</label>
+                          <div className="transfer-type-checkboxes">
+                            <label className="checkbox-label"><input type="checkbox" checked={editFlatForm.is_arrival || false} onChange={(e) => setEditFlatForm((f) => ({ ...f, is_arrival: e.target.checked }))} /> Arrival</label>
+                            <label className="checkbox-label"><input type="checkbox" checked={editFlatForm.is_departure || false} onChange={(e) => setEditFlatForm((f) => ({ ...f, is_departure: e.target.checked }))} /> Departure</label>
+                          </div>
+                        </div>
                         <div><label className="tr-edit-label">Driver name</label><input className="tr-edit-input" value={editFlatForm.driver_name} onChange={(e) => setEditFlatForm((f) => ({ ...f, driver_name: e.target.value }))} /></div>
                         <div><label className="tr-edit-label">Driver phone</label><input className="tr-edit-input" value={editFlatForm.driver_phone} onChange={(e) => setEditFlatForm((f) => ({ ...f, driver_phone: e.target.value }))} /></div>
                         <div style={{ gridColumn: '1 / -1' }}><label className="tr-edit-label">Notes</label><textarea className="tr-edit-input" rows={2} value={editFlatForm.notes} onChange={(e) => setEditFlatForm((f) => ({ ...f, notes: e.target.value }))} /></div>
@@ -768,6 +801,12 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                                 <div><label className="tr-edit-label">Time</label><input type="time" className="tr-edit-input" value={editMovementForm.time} onChange={(e) => setEditMovementForm((f) => ({ ...f, time: e.target.value }))} /></div>
                                 <div><label className="tr-edit-label">From</label><input className="tr-edit-input" value={editMovementForm.from_location} onChange={(e) => setEditMovementForm((f) => ({ ...f, from_location: e.target.value }))} /></div>
                                 <div><label className="tr-edit-label">To</label><input className="tr-edit-input" value={editMovementForm.to_location} onChange={(e) => setEditMovementForm((f) => ({ ...f, to_location: e.target.value }))} /></div>
+                                <div><label className="tr-edit-label">Transfer Type</label>
+                                  <div className="transfer-type-checkboxes">
+                                    <label className="checkbox-label"><input type="checkbox" checked={editMovementForm.is_arrival || false} onChange={(e) => setEditMovementForm((f) => ({ ...f, is_arrival: e.target.checked }))} /> Arrival</label>
+                                    <label className="checkbox-label"><input type="checkbox" checked={editMovementForm.is_departure || false} onChange={(e) => setEditMovementForm((f) => ({ ...f, is_departure: e.target.checked }))} /> Departure</label>
+                                  </div>
+                                </div>
                               </div>
                               <div className="tr-edit-actions">
                                 <button className="btn btn-success" onClick={() => saveEditMovement(c.id, mov.id)}>Save</button>
@@ -782,6 +821,8 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                               </div>
                               <div className="mov-route">
                                 {mov.from_location || '?'} → {mov.to_location || '?'}
+                                {mov.is_arrival && <span className="itin-type-badge arrival">Arrival</span>}
+                                {mov.is_departure && <span className="itin-type-badge departure">Departure</span>}
                               </div>
                               <div className="mov-actions">
                                 <button className="mov-btn" title="Edit" onClick={() => startEditMovement(c.id, mov)}>✏️</button>
@@ -806,6 +847,12 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                           <div><label className="tr-edit-label">Time</label><input type="time" className="tr-edit-input" value={movementForm.time} onChange={(e) => setMovementForm((f) => ({ ...f, time: e.target.value }))} /></div>
                           <div><label className="tr-edit-label">From (Pickup)</label><input className="tr-edit-input" placeholder="e.g. Hotel Kenzi" value={movementForm.fromLocation} onChange={(e) => setMovementForm((f) => ({ ...f, fromLocation: e.target.value }))} /></div>
                           <div><label className="tr-edit-label">To (Dropoff)</label><input className="tr-edit-input" placeholder="e.g. Ouarzazate" value={movementForm.toLocation} onChange={(e) => setMovementForm((f) => ({ ...f, toLocation: e.target.value }))} /></div>
+                          <div><label className="tr-edit-label">Transfer Type</label>
+                            <div className="transfer-type-checkboxes">
+                              <label className="checkbox-label"><input type="checkbox" checked={movementForm.isArrival} onChange={(e) => setMovementForm((f) => ({ ...f, isArrival: e.target.checked }))} /> Arrival</label>
+                              <label className="checkbox-label"><input type="checkbox" checked={movementForm.isDeparture} onChange={(e) => setMovementForm((f) => ({ ...f, isDeparture: e.target.checked }))} /> Departure</label>
+                            </div>
+                          </div>
                         </div>
                         <div className="tr-edit-actions">
                           <button className="btn btn-success" disabled={movementForm.dayIdx === ''} onClick={() => addMovement(c.id)}>Add Movement</button>
