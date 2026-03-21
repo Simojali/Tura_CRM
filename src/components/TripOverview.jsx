@@ -46,7 +46,7 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
         name: t.name,
         cost: t.cost,
         status: t.status,
-        paxLabel: t.pax_label,
+        paxLabel: t.capacity ? `${t.capacity} seats` : null,
         fromLocation: t.from_location,
         toLocation: t.to_location,
       })
@@ -63,7 +63,7 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
           cost: c.cost_per_day || 0,
           showCost: idx === 0,          // only first movement shows the price
           status: c.status,
-          paxLabel: c.pax_label,
+          paxLabel: c.capacity ? `${c.capacity} seats` : null,
           pricingMode: c.pricing_mode,
           fromLocation: mov.from_location,
           toLocation: mov.to_location,

@@ -32,16 +32,15 @@ const col = {
   city:     { key: 'city', label: 'City' },
   tier:     { key: 'tier', label: 'Tier' },
   price:    (label = 'Price (EUR)') => ({ key: 'price', label, render: 'formatPrice', className: 'ref-price' }),
-  pax:      (label = 'Pax') => ({ key: 'pax_label', label }),
-  capacity: { key: 'capacity', label: 'Capacity' },
+  capacity: (label = 'Seats') => ({ key: 'capacity', label }),
   notes:    { key: 'notes', label: 'Notes', className: 'ref-notes' },
 }
 
 const COLUMN_CONFIG = {
   all:      [col.name(),           col.category, col.subcategory(), col.city, col.price(),                         col.notes],
   hotel:    [col.name(),           col.subcategory('Type'), col.city, col.tier, col.price('Price (EUR) — S · D · T'), col.notes],
-  transfer: [col.name('Route'),    col.subcategory('Type'), col.city, col.pax(), col.capacity, col.price(),         col.notes],
-  transport:[col.name('Vehicle / Route'), col.subcategory('Type'), col.pax('Seats'), col.capacity, col.price(),     col.notes],
+  transfer: [col.name('Route'),    col.subcategory('Type'), col.city, col.capacity(), col.price(),         col.notes],
+  transport:[col.name('Vehicle / Route'), col.subcategory('Type'), col.capacity('Seats'), col.price(),     col.notes],
   activity: [col.name(),           col.subcategory('Type'), col.city, col.price(),                                  col.notes],
 }
 

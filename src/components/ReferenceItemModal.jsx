@@ -19,7 +19,6 @@ const EMPTY_FORM = {
   price_triple: '',
   price: '',
   price_unit: 'per night',
-  pax_label: '',
   notes: '',
   group_price: '',
   capacity: '',
@@ -42,7 +41,6 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
         price_triple: item.price_triple != null ? String(item.price_triple) : '',
         price: item.price != null ? String(item.price) : '',
         price_unit: item.price_unit || '',
-        pax_label: item.pax_label || '',
         notes: item.notes || '',
         group_price: item.group_price != null ? String(item.group_price) : '',
         capacity: item.capacity != null ? String(item.capacity) : '',
@@ -84,7 +82,6 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
       price_triple: isHotel ? (form.price_triple !== '' ? Number(form.price_triple) : null) : null,
       price: isHotel ? null : (Number(form.price) || 0),
       price_unit: form.price_unit || null,
-      pax_label: !isHotel ? (form.pax_label || null) : null,
       notes: form.notes || null,
       group_price: isTransport ? (form.group_price !== '' ? Number(form.group_price) : null) : null,
       capacity: (form.category === 'transfer' || isTransport) ? (form.capacity !== '' ? Number(form.capacity) : null) : null,
@@ -161,17 +158,7 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
                     ))}
                   </select>
                 </div>
-              ) : (
-                <div className="form-group">
-                  <label>Pax / Capacity</label>
-                  <input
-                    name="pax_label"
-                    value={form.pax_label}
-                    onChange={handleChange}
-                    placeholder="e.g. 1-4 pax, 17 seats"
-                  />
-                </div>
-              )}
+              ) : null}
 
               {/* Hotels: 3 room price fields */}
               {isHotel ? (

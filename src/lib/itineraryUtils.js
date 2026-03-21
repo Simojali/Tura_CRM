@@ -44,7 +44,7 @@ export function initItinerary(booking) {
       hotel_tier: null,
       hotel_cost: 0,
       activities: [],   // [{ id, name, cost, price_unit, time }]
-      transfers: [],    // [{ id, name, cost, type: 'transfer'|'transport', time, pax_label }]
+      transfers: [],    // [{ id, name, cost, type: 'transfer'|'transport', time, capacity }]
     })
   }
 

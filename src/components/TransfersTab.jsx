@@ -157,7 +157,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
         transfers: [...(row.transfers || []), {
           id, name: item.name, cost, type: category,
           base_cost: item.price || 0,
-          time, pax_label: item.pax_label || null, status,
+          time, capacity: item.capacity || null, status,
           driver_name: driverName, driver_phone: driverPhone,
           from_location: fromLocation, to_location: toLocation, notes: '',
         }].sort((a, b) => a.time.localeCompare(b.time)),
@@ -202,7 +202,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
         changes.name = ref.name
         changes.cost = ref.price || 0
         changes.base_cost = ref.price || 0
-        changes.pax_label = ref.pax_label || null
+        changes.capacity = ref.capacity || null
         changes.type = category
       }
     }
@@ -218,7 +218,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
     if (!item) return
     const newContract = {
       id: genId(), ref_id: refId,
-      name: item.name, pax_label: item.pax_label || null,
+      name: item.name, capacity: item.capacity || null,
       cost_per_day: costPerDay !== '' ? Number(costPerDay) : calcCost(item, pricingMode),
       pricing_mode: pricingMode, base_cost: item.price || 0,
       group_price: item.group_price || null, capacity: item.capacity || null,
@@ -275,7 +275,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
       if (ref) {
         changes.ref_id = ref_id
         changes.name = ref.name
-        changes.pax_label = ref.pax_label || null
+        changes.capacity = ref.capacity || null
         changes.base_cost = ref.price || 0
         changes.group_price = ref.group_price || null
         changes.capacity = ref.capacity || null
@@ -441,7 +441,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                   <option value="">— Select —</option>
                   {cityTransfers.map((r) => (
                     <option key={`transfer:${r.id}`} value={`transfer:${r.id}`}>
-                      {r.name}{r.pax_label ? ` (${r.pax_label})` : ''}
+                      {r.name}{r.capacity ? ` (${r.capacity} seats)` : ''}
                     </option>
                   ))}
                 </select>
@@ -510,7 +510,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                   onChange={(e) => handleContractRefChange(e.target.value)}>
                   <option value="">— Select transport —</option>
                   {refTransports.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}{r.pax_label ? ` (${r.pax_label})` : ''}</option>
+                    <option key={r.id} value={r.id}>{r.name}{r.capacity ? ` (${r.capacity} seats)` : ''}</option>
                   ))}
                 </select>
               </div>
@@ -594,7 +594,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                         <span className="tr-route">{item.from_location || '?'} → {item.to_location || '?'}</span>
                       )}
                       <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {item.pax_label && <span className="tr-meta">{item.pax_label}</span>}
+                        {item.capacity && <span className="tr-meta">{item.capacity} seats</span>}
                         <span className="itin-type-badge transfer">Transfer</span>
                       </div>
                     </div>
@@ -630,7 +630,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                           <select className="tr-edit-input" value={editFlatForm.refId || ''} onChange={(e) => handleEditFlatRefChange(e.target.value)}>
                             <option value="" disabled>— Select —</option>
                             {refTransfers.map((r) => (
-                              <option key={`transfer:${r.id}`} value={`transfer:${r.id}`}>{r.name}{r.pax_label ? ` (${r.pax_label})` : ''}</option>
+                              <option key={`transfer:${r.id}`} value={`transfer:${r.id}`}>{r.name}{r.capacity ? ` (${r.capacity} seats)` : ''}</option>
                             ))}
                           </select>
                         </div>
@@ -671,7 +671,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                   </button>
                   <div className="contract-header-info">
                     <span className="contract-name">{c.name}</span>
-                    {c.pax_label && <span className="tr-meta">{c.pax_label}</span>}
+                    {c.capacity && <span className="tr-meta">{c.capacity} seats</span>}
                     <span className="itin-type-badge transport">Transport</span>
                     <span className={`itin-type-badge ${(c.pricing_mode || 'private') === 'group' ? 'group-mode' : 'private-mode'}`}>{(c.pricing_mode || 'private') === 'group' ? 'Group' : 'Private'}</span>
                   </div>
@@ -712,7 +712,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                         <select className="tr-edit-input" value={editContractForm.ref_id || ''} onChange={(e) => handleEditContractRefChange(e.target.value)}>
                           <option value="" disabled>— Select transport —</option>
                           {refTransports.map((r) => (
-                            <option key={r.id} value={r.id}>{r.name}{r.pax_label ? ` (${r.pax_label})` : ''}</option>
+                            <option key={r.id} value={r.id}>{r.name}{r.capacity ? ` (${r.capacity} seats)` : ''}</option>
                           ))}
                         </select>
                       </div>
