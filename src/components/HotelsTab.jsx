@@ -20,7 +20,7 @@ function computeNights(checkin, checkout) {
 
 const EMPTY_FORM = { refId: '', checkin: '', checkout: '', status: 'requested', confirmRef: '' }
 
-export default function HotelsTab({ booking, hotels = [], onSaveHotels }) {
+export default function HotelsTab({ booking, itinerary = [], hotels = [], onSaveHotels }) {
   const [refHotels, setRefHotels] = useState([])
   const [filterStatus, setFilterStatus] = useState('all')
   const [showAddForm, setShowAddForm] = useState(false)
@@ -43,16 +43,7 @@ export default function HotelsTab({ booking, hotels = [], onSaveHotels }) {
     return () => document.removeEventListener('click', close)
   }, [])
 
-  // Auto-populate checkin/checkout from booking dates
-  useEffect(() => {
-    if (showAddForm) {
-      setAddForm((f) => ({
-        ...f,
-        checkin: f.checkin || booking.check_in || '',
-        checkout: f.checkout || booking.check_out || '',
-      }))
-    }
-  }, [showAddForm, booking.check_in, booking.check_out])
+  // No longer auto-populate full trip dates — dates are auto-filled based on hotel city
 
   // Group reference hotels by city for <optgroup>
   const hotelsByCity = useMemo(() => {
@@ -62,6 +53,57 @@ export default function HotelsTab({ booking, hotels = [], onSaveHotels }) {
       return acc
     }, {})
   }, [refHotels])
+
+  // ── Trip date bounds ─────────────────────────────────────────────────
+  const tripStart = booking.check_in || ''
+  const tripEnd = booking.check_out || ''
+
+  // Find check-in/check-out dates based on which days have a given city
+  const getCityDateRange = (city) => {
+    if (!city || !itinerary.length) return { checkin: '', checkout: '' }
+    const cityDays = itinerary.filter((r) => r.city === city).map((r) => r.date).sort()
+    if (cityDays.length === 0) return { checkin: '', checkout: '' }
+    const checkin = cityDays[0]
+    // Checkout = day after last city day
+    const last = new Date(cityDays[cityDays.length - 1])
+    last.setDate(last.getDate() + 1)
+    const mm = String(last.getMonth() + 1).padStart(2, '0')
+    const dd = String(last.getDate()).padStart(2, '0')
+    const checkout = `${last.getFullYear()}-${mm}-${dd}`
+    return { checkin, checkout }
+  }
+
+  // When a hotel is selected in the add form, auto-fill dates from its city
+  const handleHotelSelect = (refId) => {
+    const hotel = refHotels.find((h) => h.id === refId)
+    if (hotel) {
+      const { checkin, checkout } = getCityDateRange(hotel.city)
+      setAddForm((f) => ({
+        ...f,
+        refId,
+        checkin: checkin || f.checkin,
+        checkout: checkout || f.checkout,
+      }))
+    } else {
+      setAddForm((f) => ({ ...f, refId }))
+    }
+  }
+
+  // When a hotel is selected in the edit form, auto-fill dates from its city
+  const handleEditHotelSelect = (refId) => {
+    const hotel = refHotels.find((h) => h.id === refId)
+    if (hotel) {
+      const { checkin, checkout } = getCityDateRange(hotel.city)
+      setEditForm((f) => ({
+        ...f,
+        refId,
+        checkin: checkin || f.checkin,
+        checkout: checkout || f.checkout,
+      }))
+    } else {
+      setEditForm((f) => ({ ...f, refId }))
+    }
+  }
 
   const s = Number(booking.single_rooms) || 0
   const d = Number(booking.double_rooms) || 0
@@ -206,7 +248,7 @@ export default function HotelsTab({ booking, hotels = [], onSaveHotels }) {
             <select
               className="tr-edit-input"
               value={addForm.refId}
-              onChange={(e) => setAddForm((f) => ({ ...f, refId: e.target.value }))}
+              onChange={(e) => handleHotelSelect(e.target.value)}
             >
               <option value="">— Select hotel —</option>
               {renderHotelOptions()}
@@ -219,6 +261,8 @@ export default function HotelsTab({ booking, hotels = [], onSaveHotels }) {
               type="date"
               className="tr-edit-input"
               value={addForm.checkin}
+              min={tripStart}
+              max={tripEnd}
               onChange={(e) => setAddForm((f) => ({ ...f, checkin: e.target.value }))}
             />
           </div>
@@ -229,6 +273,8 @@ export default function HotelsTab({ booking, hotels = [], onSaveHotels }) {
               type="date"
               className="tr-edit-input"
               value={addForm.checkout}
+              min={tripStart}
+              max={tripEnd}
               onChange={(e) => setAddForm((f) => ({ ...f, checkout: e.target.value }))}
             />
           </div>
@@ -391,7 +437,7 @@ export default function HotelsTab({ booking, hotels = [], onSaveHotels }) {
                       <select
                         className="tr-edit-input"
                         value={editForm.refId}
-                        onChange={(e) => setEditForm((f) => ({ ...f, refId: e.target.value }))}
+                        onChange={(e) => handleEditHotelSelect(e.target.value)}
                       >
                         <option value="">— Keep current —</option>
                         {renderHotelOptions()}
@@ -403,6 +449,8 @@ export default function HotelsTab({ booking, hotels = [], onSaveHotels }) {
                         type="date"
                         className="tr-edit-input"
                         value={editForm.checkin}
+                        min={tripStart}
+                        max={tripEnd}
                         onChange={(e) => setEditForm((f) => ({ ...f, checkin: e.target.value }))}
                       />
                     </div>
@@ -412,6 +460,8 @@ export default function HotelsTab({ booking, hotels = [], onSaveHotels }) {
                         type="date"
                         className="tr-edit-input"
                         value={editForm.checkout}
+                        min={tripStart}
+                        max={tripEnd}
                         onChange={(e) => setEditForm((f) => ({ ...f, checkout: e.target.value }))}
                       />
                     </div>
