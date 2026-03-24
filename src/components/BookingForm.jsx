@@ -39,6 +39,9 @@ export default function BookingForm({ initialData, providers: providersProp, onS
         ...prev,
         [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value,
       }
+      if (name === 'check_in' && updated.check_out && updated.check_out < value) {
+        updated.check_out = ''
+      }
       if (name === 'check_in' || name === 'check_out') {
         const days = computeDays(updated)
         updated.number_of_days = days > 0 ? days : ''
@@ -155,6 +158,7 @@ export default function BookingForm({ initialData, providers: providersProp, onS
             type="date"
             name="check_out"
             value={form.check_out}
+            min={form.check_in || undefined}
             onChange={handleChange}
           />
         </div>
