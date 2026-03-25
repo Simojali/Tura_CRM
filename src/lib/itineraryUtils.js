@@ -126,7 +126,8 @@ export function computeDayCost(row, contracts = [], rowIndex = -1, hotels = []) 
 
 /**
  * Aggregate totals across all rows + transport contracts.
- * Returns { hotelTotal, activityTotal, transferTotal, grandTotal, costPerPerson }
+ * Returns { hotelTotal, activityTotal, transferTotal, grandTotal, costPerPerson,
+ *           sharedTotal, sharedPerPerson, roomBreakdown }
  */
 export function computeTotals(rows, booking, contracts = [], hotels = []) {
   let hotelTotal = 0
@@ -150,7 +151,35 @@ export function computeTotals(rows, booking, contracts = [], hotels = []) {
   const guests = Math.max(Number(booking.number_of_guests) || 1, 1)
   const costPerPerson = grandTotal / guests
 
-  return { hotelTotal, activityTotal, transferTotal, grandTotal, costPerPerson }
+  // ── Per-room-type breakdown ──────────────────────────────────────────
+  const sharedTotal = activityTotal + transferTotal
+  const sharedPerPerson = sharedTotal / guests
+
+  // Accumulate per-type hotel cost across all hotel entries
+  let hotelCostSingle = 0
+  let hotelCostDouble = 0
+  let hotelCostTriple = 0
+
+  if (hotels.length > 0) {
+    hotels.forEach((h) => {
+      const nights = Number(h.nights) || 0
+      hotelCostSingle += (Number(h.price_single) || 0) * nights
+      hotelCostDouble += ((Number(h.price_double) || 0) / 2) * nights
+      hotelCostTriple += ((Number(h.price_triple) || 0) / 3) * nights
+    })
+  }
+
+  const singleRooms = Number(booking.single_rooms) || 0
+  const doubleRooms = Number(booking.double_rooms) || 0
+  const tripleRooms = Number(booking.triple_rooms) || 0
+
+  const roomBreakdown = [
+    { type: 'Single', guests: singleRooms * 1, hotelPerPerson: hotelCostSingle, totalPerPerson: hotelCostSingle + sharedPerPerson },
+    { type: 'Double', guests: doubleRooms * 2, hotelPerPerson: hotelCostDouble, totalPerPerson: hotelCostDouble + sharedPerPerson },
+    { type: 'Triple', guests: tripleRooms * 3, hotelPerPerson: hotelCostTriple, totalPerPerson: hotelCostTriple + sharedPerPerson },
+  ].filter((r) => r.guests > 0)
+
+  return { hotelTotal, activityTotal, transferTotal, grandTotal, costPerPerson, sharedTotal, sharedPerPerson, roomBreakdown }
 }
 
 /**

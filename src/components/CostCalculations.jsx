@@ -22,6 +22,8 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
 
   const fmt = (n) => `€${Number(n).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
+  const hasRoomBreakdown = totals.roomBreakdown && totals.roomBreakdown.length > 0
+
   return (
     <div className="cost-panel">
       <div className="cost-panel-header">
@@ -56,7 +58,7 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
             <span>{fmt(totals.grandTotal)}</span>
           </div>
           <div className="cost-row cost-secondary">
-            <span>Cost per Person</span>
+            <span>Cost per Person (flat)</span>
             <span>{fmt(totals.costPerPerson)}</span>
           </div>
         </div>
@@ -102,6 +104,56 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
           </div>
         </div>
       </div>
+
+      {/* ── Per-Room-Type Pricing Breakdown ── */}
+      {hasRoomBreakdown && (
+        <div className="cost-room-breakdown">
+          <h4 className="cost-room-breakdown-title">Per-Person Pricing by Room Type</h4>
+          <div className="cost-room-breakdown-info">
+            Shared costs (activities + transfers + transport): {fmt(totals.sharedTotal)} ÷ {Number(booking.number_of_guests) || 1} guests = <strong>{fmt(totals.sharedPerPerson)}</strong> / person
+          </div>
+          <table className="cost-room-table">
+            <thead>
+              <tr>
+                <th>Room Type</th>
+                <th>Guests</th>
+                <th>Hotel / Person</th>
+                <th>Shared / Person</th>
+                <th>Cost / Person</th>
+                <th>Selling Price / Person</th>
+              </tr>
+            </thead>
+            <tbody>
+              {totals.roomBreakdown.map((row) => (
+                <tr key={row.type}>
+                  <td className="cost-room-type">{row.type}</td>
+                  <td>{row.guests}</td>
+                  <td>{fmt(row.hotelPerPerson)}</td>
+                  <td>{fmt(totals.sharedPerPerson)}</td>
+                  <td className="cost-room-total">{fmt(row.totalPerPerson)}</td>
+                  <td className="cost-room-selling">{fmt(row.totalPerPerson * (1 + markup / 100))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="cost-room-supplement">
+            {totals.roomBreakdown.length > 1 && (() => {
+              const base = totals.roomBreakdown.find((r) => r.type === 'Double')
+              const single = totals.roomBreakdown.find((r) => r.type === 'Single')
+              if (base && single) {
+                const supplement = single.totalPerPerson - base.totalPerPerson
+                return (
+                  <span>
+                    Single supplement: <strong>{fmt(supplement)}</strong> / person
+                    {markup > 0 && <> (selling: <strong>{fmt(supplement * (1 + markup / 100))}</strong>)</>}
+                  </span>
+                )
+              }
+              return null
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
