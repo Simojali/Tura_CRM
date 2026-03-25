@@ -23,7 +23,7 @@ const EMPTY_FORM = {
   group_price_eur: '',
   group_price_mad: '',
   paid: '',
-  booking_status: 'Pending',
+  booking_status: 'Quotation',
   special_request: '',
 }
 

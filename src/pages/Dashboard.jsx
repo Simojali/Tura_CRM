@@ -247,6 +247,17 @@ export default function Dashboard() {
     setToast({ message: 'Booking deleted', type: 'success' })
   }
 
+  const handleStatusChange = async (e, bookingId, status) => {
+    e.stopPropagation()
+    setMenuOpen(null)
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('bookings').update({ booking_status: status }).eq('id', bookingId)
+      if (error) { setToast({ message: 'Error updating status', type: 'error' }); return }
+    }
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, booking_status: status } : b))
+    setToast({ message: `Status changed to ${status}`, type: 'success' })
+  }
+
   return (
     <>
       <div className="page-header">
@@ -325,8 +336,8 @@ export default function Dashboard() {
                   {/* Booking Status */}
                   <div className="bk-section" style={{ minWidth: 120 }}>
                     <div className="bk-section-label">Status</div>
-                    <span className={`bk-status-badge bk-status-badge-${(b.booking_status || 'pending').toLowerCase()}`}>
-                      {b.booking_status || 'Pending'}
+                    <span className={`bk-status-badge bk-status-badge-${(b.booking_status || 'Quotation').toLowerCase()}`}>
+                      {b.booking_status || 'Quotation'}
                     </span>
                   </div>
 
@@ -409,6 +420,21 @@ export default function Dashboard() {
                           >
                             Edit booking
                           </button>
+                          <div className="bk-dots-menu-divider" />
+                          <div className="bk-dots-menu-label">Change status</div>
+                          {['Quotation', 'Confirmed', 'Completed', 'Cancelled'].filter(s => s !== (b.booking_status || 'Quotation')).map(s => (
+                            <button
+                              key={s}
+                              className="bk-dots-menu-item"
+                              onClick={e => handleStatusChange(e, b.id, s)}
+                            >
+                              {s === 'Quotation' && '📋 '}
+                              {s === 'Confirmed' && '✅ '}
+                              {s === 'Completed' && '✔️ '}
+                              {s === 'Cancelled' && '✕ '}
+                              {s}
+                            </button>
+                          ))}
                           <div className="bk-dots-menu-divider" />
                           <button
                             className="bk-dots-menu-item bk-dots-menu-danger"

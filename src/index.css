@@ -3097,11 +3097,10 @@ tbody tr:hover {
   border-radius: 999px;
   white-space: nowrap;
 }
+.bk-status-badge-quotation  { background: #fef9c3; color: #854d0e; }
 .bk-status-badge-confirmed  { background: #dcfce7; color: #15803d; }
-.bk-status-badge-pending    { background: #fef9c3; color: #854d0e; }
-.bk-status-badge-cancelled  { background: #ffedd5; color: #ea580c; }
-.bk-status-badge-passed     { background: #f3f4f6; color: #6b7280; }
-.bk-status-badge-active     { background: #dbeafe; color: #1d4ed8; }
+.bk-status-badge-completed  { background: #dbeafe; color: #1d4ed8; }
+.bk-status-badge-cancelled  { background: #fee2e2; color: #dc2626; }
 
 /* Balance row with paid + remaining */
 .bk-balance-row { display: flex; align-items: center; gap: 10px; }
@@ -3178,6 +3177,7 @@ tbody tr:hover {
 .bk-dots-menu-danger { color: #dc2626; }
 .bk-dots-menu-danger:hover { background: #fef2f2; color: #dc2626; }
 .bk-dots-menu-divider { height: 1px; background: var(--color-border); margin: 2px 0; }
+.bk-dots-menu-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-light); padding: 0.35rem 0.75rem 0.15rem; }
 
 /* ── Skeleton loader ─────────────────────────────────────────────────────────── */
 @keyframes shimmer {

@@ -56,7 +56,7 @@ export const HOTEL_TYPES = [
   'Luxury',
 ]
 
-export const RESERV_STATUSES = ['Confirmed', 'Pending', 'Passed']
+export const RESERV_STATUSES = ['Quotation', 'Confirmed', 'Completed', 'Cancelled']
 
 export const HOTEL_STATUS_LABELS = {
   requested: 'Requested',
