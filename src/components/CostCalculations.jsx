@@ -27,6 +27,8 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
   const marginPct = comparePrice > 0 ? (pl / comparePrice) * 100 : 0
   const isProfit = pl >= 0
 
+  const guests = Number(booking.number_of_guests) || 1
+
   // Find client type label
   const clientTypeLabel = CLIENT_TYPES.find((ct) => ct.value === booking.client_type)?.label || '—'
 
@@ -62,6 +64,7 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
 
   return (
     <div className="cost-panel">
+      {/* ── Header ── */}
       <div className="cost-panel-header">
         <h3 className="cost-panel-title">Cost Analysis</h3>
         {isQuotation ? (
@@ -74,43 +77,37 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
         )}
       </div>
 
-      <div className="cost-grid">
-        {/* ── Left: Cost Breakdown ── */}
-        <div className="cost-col">
-          <div className="cost-col-title">Cost Breakdown (NET)</div>
-
-          <div className="cost-row">
-            <span>Hotel costs</span>
-            <span>{fmt(totals.hotelTotal)}</span>
+      {/* ── Section 1: Cost Breakdown ── */}
+      <div className="cost-section">
+        <div className="cost-section-title">Cost Breakdown (NET)</div>
+        <div className="cost-markup-row">
+          <div className="cost-markup-result">
+            <span className="cost-markup-label">Hotels</span>
+            <span className="cost-markup-value-sm">{fmt(totals.hotelTotal)}</span>
           </div>
-          <div className="cost-row">
-            <span>Activities</span>
-            <span>{fmt(totals.activityTotal)}</span>
+          <div className="cost-markup-result">
+            <span className="cost-markup-label">Activities</span>
+            <span className="cost-markup-value-sm">{fmt(totals.activityTotal)}</span>
           </div>
-          <div className="cost-row">
-            <span>Transfers & Transport</span>
-            <span>{fmt(totals.transferTotal)}</span>
+          <div className="cost-markup-result">
+            <span className="cost-markup-label">Transfers & Transport</span>
+            <span className="cost-markup-value-sm">{fmt(totals.transferTotal)}</span>
           </div>
-
-          <div className="cost-divider" />
-
-          <div className="cost-row cost-total">
-            <span>Total Cost (NET)</span>
-            <span>{fmt(totals.grandTotal)}</span>
-          </div>
-          <div className="cost-row cost-secondary">
-            <span>Cost per Person (flat)</span>
-            <span>{fmt(totals.costPerPerson)}</span>
+          <div className="cost-breakdown-total">
+            <span className="cost-markup-label">Total Cost (NET)</span>
+            <span className="cost-markup-value">{fmt(totals.grandTotal)}</span>
+            <span className="cost-breakdown-sub">{fmt(totals.costPerPerson)} / person</span>
           </div>
         </div>
+      </div>
 
-        {/* ── Right: Pricing & Margin ── */}
-        <div className="cost-col">
-          <div className="cost-col-title">Pricing & Margin</div>
-
+      {/* ── Section 2: Markup & Pricing ── */}
+      <div className="cost-section">
+        <div className="cost-section-title">Markup & Pricing</div>
+        <div className="cost-markup-row">
           {isQuotation ? (
             <>
-              <div className="cost-row cost-row-input">
+              <div className="cost-markup-field">
                 <label htmlFor="markup-input">Markup %</label>
                 <input
                   id="markup-input"
@@ -123,46 +120,41 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
                   step="1"
                 />
               </div>
-              <div className="cost-row">
-                <span>Suggested Selling Price</span>
-                <span className="cost-suggested">{fmt(suggestedPrice)}</span>
+              <div className="cost-markup-result">
+                <span className="cost-markup-label">Suggested Selling Price</span>
+                <span className="cost-markup-value">{fmt(suggestedPrice)}</span>
+              </div>
+              <div className="cost-markup-result">
+                <span className="cost-markup-label">Per Person (avg)</span>
+                <span className="cost-markup-value-sm">{fmt(suggestedPrice / guests)}</span>
               </div>
             </>
           ) : (
             <>
-              <div className="cost-row">
-                <span>Locked Group Price</span>
-                <span className="cost-suggested">{groupPrice > 0 ? fmt(groupPrice) : <em style={{ color: 'var(--color-text-light)' }}>not set</em>}</span>
+              <div className="cost-markup-result">
+                <span className="cost-markup-label">Locked Group Price</span>
+                <span className="cost-markup-value">{groupPrice > 0 ? fmt(groupPrice) : '—'}</span>
               </div>
-              <div className="cost-row cost-secondary">
-                <span>Markup used</span>
-                <span>{markup}%</span>
+              <div className="cost-markup-result">
+                <span className="cost-markup-label">Markup used</span>
+                <span className="cost-markup-value-sm">{markup}%</span>
               </div>
             </>
           )}
-
-          <div className="cost-divider" />
-
-          <div className={`cost-row cost-total ${isProfit ? 'margin-positive' : 'margin-negative'}`}>
-            <span>{isQuotation ? 'Expected P / L' : 'P / L'}</span>
-            <span>{isProfit ? '+' : ''}{fmt(pl)}</span>
-          </div>
-          <div className={`cost-row ${isProfit ? 'margin-positive' : 'margin-negative'}`}>
-            <span>Margin %</span>
-            <span>{marginPct.toFixed(1)}%</span>
-          </div>
-          <div className="cost-status">
-            {isProfit ? '✅ Profitable' : '⚠️ Loss'}
+          <div className={`cost-pl-badge ${isProfit ? 'cost-pl-profit' : 'cost-pl-loss'}`}>
+            <span>{isQuotation ? 'Expected P/L' : 'P/L'}</span>
+            <strong>{isProfit ? '+' : ''}{fmt(pl)}</strong>
+            <span className="cost-pl-margin">{marginPct.toFixed(1)}% margin</span>
           </div>
         </div>
       </div>
 
-      {/* ── Per-Room-Type Pricing Breakdown ── */}
+      {/* ── Section 3: Per-Room-Type Breakdown ── */}
       {hasRoomBreakdown && (
-        <div className="cost-room-breakdown">
-          <h4 className="cost-room-breakdown-title">Per-Person Pricing by Room Type</h4>
+        <div className="cost-section">
+          <div className="cost-section-title">Per-Person Pricing by Room Type</div>
           <div className="cost-room-breakdown-info">
-            Shared costs (activities + transfers + transport): {fmt(totals.sharedTotal)} ÷ {Number(booking.number_of_guests) || 1} guests = <strong>{fmt(totals.sharedPerPerson)}</strong> / person
+            Shared costs (activities + transfers + transport): {fmt(totals.sharedTotal)} ÷ {guests} guests = <strong>{fmt(totals.sharedPerPerson)}</strong> / person
           </div>
           <table className="cost-room-table">
             <thead>
@@ -172,7 +164,7 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
                 <th>Hotel / Person</th>
                 <th>Shared / Person</th>
                 <th>Cost / Person</th>
-                <th>Selling Price / Person</th>
+                <th>Selling / Person</th>
               </tr>
             </thead>
             <tbody>
@@ -188,26 +180,24 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
               ))}
             </tbody>
           </table>
-          <div className="cost-room-supplement">
-            {totals.roomBreakdown.length > 1 && (() => {
-              const base = totals.roomBreakdown.find((r) => r.type === 'Double')
-              const single = totals.roomBreakdown.find((r) => r.type === 'Single')
-              if (base && single) {
-                const supplement = single.totalPerPerson - base.totalPerPerson
-                return (
-                  <span>
-                    Single supplement: <strong>{fmt(supplement)}</strong> / person
-                    {markup > 0 && <> (selling: <strong>{fmt(supplement * (1 + markup / 100))}</strong>)</>}
-                  </span>
-                )
-              }
-              return null
-            })()}
-          </div>
+          {totals.roomBreakdown.length > 1 && (() => {
+            const base = totals.roomBreakdown.find((r) => r.type === 'Double')
+            const single = totals.roomBreakdown.find((r) => r.type === 'Single')
+            if (base && single) {
+              const supplement = single.totalPerPerson - base.totalPerPerson
+              return (
+                <div className="cost-room-supplement">
+                  Single supplement: <strong>{fmt(supplement)}</strong> / person
+                  {markup > 0 && <> (selling: <strong>{fmt(supplement * (1 + markup / 100))}</strong>)</>}
+                </div>
+              )
+            }
+            return null
+          })()}
         </div>
       )}
 
-      {/* ── Action Buttons ── */}
+      {/* ── Section 4: Action Button ── */}
       {onUpdateBooking && (
         <div className="cost-actions">
           {isQuotation ? (

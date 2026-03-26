@@ -2825,21 +2825,15 @@ tbody tr:hover {
   padding: 0.2rem 0.65rem;
 }
 
-.cost-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-}
-
-.cost-col {
+/* ── Linear Sections ── */
+.cost-section {
   padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
-
-.cost-col:first-child {
-  border-right: 1px solid var(--color-border);
+.cost-section:last-of-type {
+  border-bottom: none;
 }
-
-.cost-col-title {
+.cost-section-title {
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -2879,7 +2873,7 @@ tbody tr:hover {
   border-radius: var(--radius);
   font-size: 0.875rem;
   font-weight: 600;
-  text-align: right;
+  text-align: center;
   color: var(--color-text);
   background: var(--color-white);
 }
@@ -2915,6 +2909,92 @@ tbody tr:hover {
   color: var(--color-primary);
 }
 
+/* ── Markup & Pricing Row ── */
+.cost-markup-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  align-items: center;
+  justify-items: center;
+  gap: 1.5rem;
+}
+.cost-markup-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.3rem;
+}
+.cost-markup-field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+.cost-markup-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.2rem;
+}
+.cost-markup-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cost-markup-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.cost-markup-value-sm {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.cost-breakdown-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.15rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+.cost-breakdown-sub {
+  font-size: 0.72rem;
+  color: var(--color-text-light);
+}
+
+.cost-pl-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.cost-pl-badge strong {
+  font-size: 0.95rem;
+}
+.cost-pl-margin {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+.cost-pl-profit {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.cost-pl-loss {
+  background: #fce4ec;
+  color: #c62828;
+}
+
 .margin-positive {
   color: var(--color-success) !important;
 }
@@ -2941,17 +3021,6 @@ tbody tr:hover {
   background: var(--color-bg);
 }
 
-/* ── Per-Room-Type Breakdown ── */
-.cost-room-breakdown {
-  padding: 1.5rem 2rem 2rem;
-  border-top: 1px solid var(--color-border);
-}
-.cost-room-breakdown-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 0.5rem;
-}
 .cost-room-breakdown-info {
   font-size: 0.82rem;
   color: var(--color-text-light);
