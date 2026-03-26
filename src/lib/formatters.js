@@ -98,10 +98,13 @@ export function fmtMon(dateStr) {
  */
 export function statusClass(status) {
   switch (status) {
-    case 'Confirmed': return 'status-confirmed'
-    case 'Pending':   return 'status-pending'
-    case 'Passed':    return 'status-passed'
-    default:          return ''
+    case 'Confirmed':  return 'status-confirmed'
+    case 'Quotation':  return 'status-quotation'
+    case 'Completed':  return 'status-completed'
+    case 'Cancelled':  return 'status-cancelled'
+    case 'Pending':    return 'status-pending'
+    case 'Passed':     return 'status-passed'
+    default:           return ''
   }
 }
 

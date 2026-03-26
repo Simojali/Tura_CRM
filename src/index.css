@@ -395,6 +395,21 @@ tbody tr:hover {
   color: var(--color-text-light);
 }
 
+.status-quotation {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.status-completed {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 /* ── Modal ── */
 .modal-overlay {
   position: fixed;
