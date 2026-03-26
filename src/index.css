@@ -3007,6 +3007,43 @@ tbody tr:hover {
   line-height: 1.5;
 }
 
+/* ── Mode Badges ── */
+.cost-mode-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+}
+.cost-mode-quotation {
+  background: #fef3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+}
+.cost-mode-locked {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #28a745;
+}
+
+/* ── Action Buttons ── */
+.cost-actions {
+  padding: 1.25rem 2rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+.cost-confirm-btn {
+  font-size: 0.9rem;
+  padding: 0.6rem 2rem;
+  font-weight: 600;
+}
+.cost-revert-btn {
+  font-size: 0.82rem;
+  padding: 0.5rem 1.5rem;
+  color: var(--color-text-light);
+}
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .sidebar {

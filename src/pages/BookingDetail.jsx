@@ -267,6 +267,22 @@ export default function BookingDetail() {
     fetchBooking()
   }
 
+  const updateBookingFields = async (fields) => {
+    if (!isSupabaseConfigured) {
+      setBooking((b) => ({ ...b, ...fields }))
+      setToast({ message: 'Booking updated', type: 'success' })
+      return
+    }
+    const { error } = await supabase.from('bookings').update(fields).eq('id', id)
+    if (error) {
+      console.error('Error updating booking:', error)
+      setToast({ message: 'Error saving: ' + error.message, type: 'error' })
+      return
+    }
+    setToast({ message: 'Booking updated', type: 'success' })
+    fetchBooking()
+  }
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) setShowEditModal(false)
   }
@@ -360,6 +376,7 @@ export default function BookingDetail() {
                 itinerary={itinerary}
                 contracts={contracts}
                 hotels={hotels}
+                onUpdateBooking={updateBookingFields}
               />
             )}
           </>
