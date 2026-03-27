@@ -50,13 +50,19 @@ export default function BookingForm({ initialData, providers: providersProp, onS
     })
   }
 
+  const isQuotation = form.booking_status === 'Quotation'
+  const isCancelled = form.booking_status === 'Cancelled'
+  const showPricing = !isQuotation
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const total = Number(form.group_price_eur) || 0
-    const paid  = Number(form.paid) || 0
-    if (paid > total && total > 0) {
-      alert('Paid amount cannot exceed the total group price.')
-      return
+    if (showPricing) {
+      const total = Number(form.group_price_eur) || 0
+      const paid  = Number(form.paid) || 0
+      if (paid > total && total > 0) {
+        alert('Paid amount cannot exceed the total group price.')
+        return
+      }
     }
     setSaving(true)
     try {
@@ -263,66 +269,8 @@ export default function BookingForm({ initialData, providers: providersProp, onS
           />
         </div>
 
-        {/* Pricing Section */}
-        <div className="form-section-label">Pricing</div>
-
-        <div className="form-group">
-          <label>Unit Price (EUR)</label>
-          <input
-            type="number"
-            name="unite_price_eur"
-            value={form.unite_price_eur}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Group Price (EUR)</label>
-          <input
-            type="number"
-            name="group_price_eur"
-            value={form.group_price_eur}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Group Price (MAD)</label>
-          <input
-            type="number"
-            name="group_price_mad"
-            value={form.group_price_mad}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Paid</label>
-          <input
-            type="number"
-            name="paid"
-            value={form.paid}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-          />
-        </div>
-
-        {/* Rest of Payment (calculated, always shown) */}
-        <div className="form-group">
-          <label>Remaining Payment</label>
-          <div className="calculated-value">
-            {restOfPayment.toFixed(2)} EUR
-          </div>
-        </div>
-
-        {/* Status */}
+        {/* Status (before pricing — controls what's visible) */}
+        <div className="form-section-label">Status</div>
         <div className="form-group">
           <label>Booking Status *</label>
           <select
@@ -336,6 +284,76 @@ export default function BookingForm({ initialData, providers: providersProp, onS
             ))}
           </select>
         </div>
+
+        {/* Pricing Section — hidden for Quotation */}
+        <div className="form-section-label">Pricing</div>
+
+        {showPricing ? (
+          <>
+            <div className="form-group">
+              <label>Unit Price (EUR)</label>
+              <input
+                type="number"
+                name="unite_price_eur"
+                value={form.unite_price_eur}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                readOnly={isCancelled}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Group Price (EUR)</label>
+              <input
+                type="number"
+                name="group_price_eur"
+                value={form.group_price_eur}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                readOnly={isCancelled}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Group Price (MAD)</label>
+              <input
+                type="number"
+                name="group_price_mad"
+                value={form.group_price_mad}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                readOnly={isCancelled}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Paid</label>
+              <input
+                type="number"
+                name="paid"
+                value={form.paid}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                readOnly={isCancelled}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Remaining Payment</label>
+              <div className="calculated-value">
+                {restOfPayment.toFixed(2)} EUR
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="form-group full-width">
+            <p className="pricing-note">Prices will be calculated in Cost Analysis</p>
+          </div>
+        )}
 
         {/* Special Request */}
         <div className="form-group full-width">
