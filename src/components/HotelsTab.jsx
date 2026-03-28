@@ -58,31 +58,89 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
   const tripStart = booking.check_in || ''
   const tripEnd = booking.check_out || ''
 
-  // Find check-in/check-out dates based on which days have a given city
-  const getCityDateRange = (city) => {
-    if (!city || !itinerary.length) return { checkin: '', checkout: '' }
-    const cityDays = itinerary.filter((r) => r.city === city).map((r) => r.date).sort()
-    if (cityDays.length === 0) return { checkin: '', checkout: '' }
-    const checkin = cityDays[0]
-    // Checkout = day after last city day
-    const last = new Date(cityDays[cityDays.length - 1])
-    last.setDate(last.getDate() + 1)
-    const mm = String(last.getMonth() + 1).padStart(2, '0')
-    const dd = String(last.getDate()).padStart(2, '0')
-    const checkout = `${last.getFullYear()}-${mm}-${dd}`
-    return { checkin, checkout }
+  // Split city appearances into contiguous blocks (handles gaps from other cities)
+  const getCityBlocks = (city) => {
+    if (!city || !itinerary.length) return []
+    const cityRows = itinerary.filter((r) => r.city === city).sort((a, b) => a.date.localeCompare(b.date))
+    if (cityRows.length === 0) return []
+
+    const blocks = []
+    let blockStart = cityRows[0]
+    let blockEnd = cityRows[0]
+
+    for (let i = 1; i < cityRows.length; i++) {
+      const prev = new Date(blockEnd.date)
+      const curr = new Date(cityRows[i].date)
+      const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24))
+      if (diffDays === 1) {
+        blockEnd = cityRows[i]
+      } else {
+        blocks.push({ startRow: blockStart, endRow: blockEnd })
+        blockStart = cityRows[i]
+        blockEnd = cityRows[i]
+      }
+    }
+    blocks.push({ startRow: blockStart, endRow: blockEnd })
+
+    const lastItinDay = itinerary.reduce((max, r) => r.date > max ? r.date : max, itinerary[0]?.date || '')
+    return blocks.map((b) => {
+      const isLastDayOfTrip = b.endRow.date === lastItinDay
+      let checkoutDate
+      if (isLastDayOfTrip) {
+        // Last day of trip = departure day, no overnight stay — checkout is that same day
+        checkoutDate = b.endRow.date
+      } else {
+        // Mid-trip block: checkout = day after last city day
+        const last = new Date(b.endRow.date)
+        last.setDate(last.getDate() + 1)
+        const mm = String(last.getMonth() + 1).padStart(2, '0')
+        const dd = String(last.getDate()).padStart(2, '0')
+        checkoutDate = `${last.getFullYear()}-${mm}-${dd}`
+      }
+      return {
+        checkin: b.startRow.date,
+        checkout: checkoutDate,
+        dayIn: b.startRow.day,
+        dayOut: isLastDayOfTrip ? b.endRow.day : b.endRow.day + 1,
+      }
+    })
+  }
+
+  // Find the first city block that doesn't already have a hotel covering it
+  const getAvailableBlock = (city, excludeHotelId) => {
+    const blocks = getCityBlocks(city)
+    if (blocks.length === 0) return null
+    const otherHotels = hotels.filter((h) => h.id !== excludeHotelId)
+    return blocks.find((block) =>
+      !otherHotels.some((h) => h.checkin === block.checkin && h.checkout === block.checkout)
+    ) || blocks[0]
+  }
+
+  // Look up itinerary day number for a given date
+  const getDayNum = (date) => {
+    if (!date || !itinerary.length) return null
+    const row = itinerary.find((r) => r.date === date)
+    if (row) return row.day
+    // For checkout dates (day after last night), find the previous day + 1
+    const prev = new Date(date)
+    prev.setDate(prev.getDate() - 1)
+    const mm = String(prev.getMonth() + 1).padStart(2, '0')
+    const dd = String(prev.getDate()).padStart(2, '0')
+    const prevStr = `${prev.getFullYear()}-${mm}-${dd}`
+    const prevRow = itinerary.find((r) => r.date === prevStr)
+    return prevRow ? prevRow.day + 1 : null
   }
 
   // When a hotel is selected in the add form, auto-fill dates from its city
   const handleHotelSelect = (refId) => {
     const hotel = refHotels.find((h) => h.id === refId)
     if (hotel) {
-      const { checkin, checkout } = getCityDateRange(hotel.city)
+      const block = getAvailableBlock(hotel.city)
       setAddForm((f) => ({
         ...f,
         refId,
-        checkin: checkin || f.checkin,
-        checkout: checkout || f.checkout,
+        checkin: block?.checkin || f.checkin,
+        checkout: block?.checkout || f.checkout,
       }))
     } else {
       setAddForm((f) => ({ ...f, refId }))
@@ -93,12 +151,12 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
   const handleEditHotelSelect = (refId) => {
     const hotel = refHotels.find((h) => h.id === refId)
     if (hotel) {
-      const { checkin, checkout } = getCityDateRange(hotel.city)
+      const block = getAvailableBlock(hotel.city, editingId)
       setEditForm((f) => ({
         ...f,
         refId,
-        checkin: checkin || f.checkin,
-        checkout: checkout || f.checkout,
+        checkin: block?.checkin || f.checkin,
+        checkout: block?.checkout || f.checkout,
       }))
     } else {
       setEditForm((f) => ({ ...f, refId }))
@@ -262,7 +320,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
           </div>
 
           <div className="tab-add-field">
-            <label>Check-in</label>
+            <label>Check-in {addForm.checkin && getDayNum(addForm.checkin) ? <span className="ht-day-badge">D{getDayNum(addForm.checkin)}</span> : ''}</label>
             <input
               type="date"
               className="tr-edit-input"
@@ -274,7 +332,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
           </div>
 
           <div className="tab-add-field">
-            <label>Check-out</label>
+            <label>Check-out {addForm.checkout && getDayNum(addForm.checkout) ? <span className="ht-day-badge">D{getDayNum(addForm.checkout)}</span> : ''}</label>
             <input
               type="date"
               className="tr-edit-input"
@@ -365,7 +423,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                 {/* Dates */}
                 <div className="ht-dates">
                   <span className="ht-checkin-out">
-                    {fmtDate(entry.checkin)} → {fmtDate(entry.checkout)}
+                    {fmtDate(entry.checkin)}{getDayNum(entry.checkin) ? ` (D${getDayNum(entry.checkin)})` : ''} → {fmtDate(entry.checkout)}{getDayNum(entry.checkout) ? ` (D${getDayNum(entry.checkout)})` : ''}
                   </span>
                 </div>
 
@@ -450,7 +508,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                       </select>
                     </div>
                     <div>
-                      <label className="tr-edit-label">Check-in</label>
+                      <label className="tr-edit-label">Check-in {editForm.checkin && getDayNum(editForm.checkin) ? <span className="ht-day-badge">D{getDayNum(editForm.checkin)}</span> : ''}</label>
                       <input
                         type="date"
                         className="tr-edit-input"
@@ -461,7 +519,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                       />
                     </div>
                     <div>
-                      <label className="tr-edit-label">Check-out</label>
+                      <label className="tr-edit-label">Check-out {editForm.checkout && getDayNum(editForm.checkout) ? <span className="ht-day-badge">D{getDayNum(editForm.checkout)}</span> : ''}</label>
                       <input
                         type="date"
                         className="tr-edit-input"
