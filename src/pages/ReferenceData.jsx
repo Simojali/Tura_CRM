@@ -9,7 +9,6 @@ import Toast from '../components/Toast'
 
 const CATEGORY_TABS = [
   { key: 'all', label: 'All' },
-  { key: 'hotel', label: 'Hotels' },
   { key: 'transfer', label: 'Transfers' },
   { key: 'activity', label: 'Activities' },
   { key: 'transport', label: 'Transport' },
@@ -38,7 +37,6 @@ const col = {
 
 const COLUMN_CONFIG = {
   all:      [col.name(),           col.category, col.subcategory(), col.city, col.price(),                         col.notes],
-  hotel:    [col.name(),           col.subcategory('Type'), col.city, col.tier, { key: 'contact_person', label: 'Contact', render: (item) => item.contact_person || '—' }, col.price('Price (EUR) — S · D · T'), col.notes],
   transfer: [col.name('Route'),    col.subcategory('Type'), col.city, col.capacity(), col.price(),         col.notes],
   transport:[col.name('Vehicle / Route'), col.subcategory('Type'), col.capacity('Seats'), col.price(),     col.notes],
   activity: [col.name(),           col.subcategory('Type'), col.city, col.price(),                                  col.notes],
@@ -62,7 +60,10 @@ export default function ReferenceData() {
 
   // Load reference data + cities on mount
   useEffect(() => {
-    loadReferenceData().then((data) => { setItems(data); setLoadingItems(false) })
+    loadReferenceData().then((data) => {
+      setItems(data.filter((i) => i.category !== 'hotel'))
+      setLoadingItems(false)
+    })
     loadCities().then((data) => setCities(data))
   }, [])
 
@@ -121,7 +122,7 @@ export default function ReferenceData() {
     return cities.sort()
   }, [items, activeTab])
 
-  const showTierFilter = activeTab === 'all' || activeTab === 'hotel'
+  const showTierFilter = false
 
   const handleSave = async (data) => {
     if (modalItem && modalItem.id) {

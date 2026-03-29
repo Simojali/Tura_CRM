@@ -7,6 +7,8 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
 import BookingDetail from './pages/BookingDetail'
 import ReferenceData from './pages/ReferenceData'
+import HotelsList from './pages/HotelsList'
+import HotelProfile from './pages/HotelProfile'
 import Login from './pages/Login'
 import './index.css'
 
@@ -23,6 +25,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/bookings/:id" element={<BookingDetail />} />
+              <Route path="/hotels" element={<HotelsList />} />
+              <Route path="/hotels/:id" element={<HotelProfile />} />
               <Route path="/reference-data" element={<ReferenceData />} />
             </Route>
           </Route>

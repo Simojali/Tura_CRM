@@ -102,8 +102,8 @@ export default function Sidebar() {
         </div>
 
         <button
-          className={`sidebar-item ${isRefTab('hotel') ? 'active' : ''}`}
-          onClick={() => navigate('/reference-data?tab=hotel')}
+          className={`sidebar-item ${path === '/hotels' || path.startsWith('/hotels/') ? 'active' : ''}`}
+          onClick={() => navigate('/hotels')}
         >
           <IconHotel />
           Hotels

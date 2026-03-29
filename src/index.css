@@ -686,6 +686,102 @@ tbody tr:hover {
   }
 }
 
+/* ── Hotel Profile Page ── */
+.hp-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .hp-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hp-card-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-light);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hp-card-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.hp-field {
+  margin-bottom: 0.75rem;
+}
+
+.hp-field:last-child {
+  margin-bottom: 0;
+}
+
+.hp-field-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-light);
+  margin-bottom: 0.25rem;
+}
+
+.hp-field-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.hp-field-value a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.hp-field-value a:hover {
+  text-decoration: underline;
+}
+
+.hp-field-empty {
+  color: var(--color-text-light);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.hp-prices-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.hp-price-item {
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  background: var(--color-bg-alt, var(--color-bg));
+  border-radius: 8px;
+}
+
+.hp-price-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-light);
+  margin-bottom: 0.25rem;
+}
+
+.hp-price-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
 /* ── Booking Summary Card ── */
 .booking-card {
   background: var(--color-card);
