@@ -38,7 +38,7 @@ const col = {
 
 const COLUMN_CONFIG = {
   all:      [col.name(),           col.category, col.subcategory(), col.city, col.price(),                         col.notes],
-  hotel:    [col.name(),           col.subcategory('Type'), col.city, col.tier, col.price('Price (EUR) — S · D · T'), col.notes],
+  hotel:    [col.name(),           col.subcategory('Type'), col.city, col.tier, { key: 'contact_person', label: 'Contact', render: (item) => item.contact_person || '—' }, col.price('Price (EUR) — S · D · T'), col.notes],
   transfer: [col.name('Route'),    col.subcategory('Type'), col.city, col.capacity(), col.price(),         col.notes],
   transport:[col.name('Vehicle / Route'), col.subcategory('Type'), col.capacity('Seats'), col.price(),     col.notes],
   activity: [col.name(),           col.subcategory('Type'), col.city, col.price(),                                  col.notes],
@@ -89,7 +89,8 @@ export default function ReferenceData() {
           i.name.toLowerCase().includes(q) ||
           (i.city && i.city.toLowerCase().includes(q)) ||
           (i.notes && i.notes.toLowerCase().includes(q)) ||
-          (i.subcategory && i.subcategory.toLowerCase().includes(q))
+          (i.subcategory && i.subcategory.toLowerCase().includes(q)) ||
+          (i.contact_person && i.contact_person.toLowerCase().includes(q))
       )
     }
 

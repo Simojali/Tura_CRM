@@ -22,6 +22,12 @@ const EMPTY_FORM = {
   notes: '',
   group_price: '',
   capacity: '',
+  contact_person: '',
+  contact_email: '',
+  contact_phone: '',
+  payment_terms: '',
+  default_deposit_pct: '',
+  cancellation_policy: '',
 }
 
 export default function ReferenceItemModal({ item, cities: citiesProp, onClose, onSave }) {
@@ -44,6 +50,12 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
         notes: item.notes || '',
         group_price: item.group_price != null ? String(item.group_price) : '',
         capacity: item.capacity != null ? String(item.capacity) : '',
+        contact_person: item.contact_person || '',
+        contact_email: item.contact_email || '',
+        contact_phone: item.contact_phone || '',
+        payment_terms: item.payment_terms || '',
+        default_deposit_pct: item.default_deposit_pct != null ? String(item.default_deposit_pct) : '',
+        cancellation_policy: item.cancellation_policy || '',
       })
     }
   }, [item])
@@ -62,6 +74,12 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
         next.price_triple = ''
         next.group_price = ''
         next.capacity = ''
+        next.contact_person = ''
+        next.contact_email = ''
+        next.contact_phone = ''
+        next.payment_terms = ''
+        next.default_deposit_pct = ''
+        next.cancellation_policy = ''
       }
       return next
     })
@@ -85,6 +103,12 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
       notes: form.notes || null,
       group_price: isTransport ? (form.group_price !== '' ? Number(form.group_price) : null) : null,
       capacity: (form.category === 'transfer' || isTransport) ? (form.capacity !== '' ? Number(form.capacity) : null) : null,
+      contact_person: isHotel ? (form.contact_person || null) : null,
+      contact_email: isHotel ? (form.contact_email || null) : null,
+      contact_phone: isHotel ? (form.contact_phone || null) : null,
+      payment_terms: isHotel ? (form.payment_terms || null) : null,
+      default_deposit_pct: isHotel ? (form.default_deposit_pct !== '' ? Number(form.default_deposit_pct) : null) : null,
+      cancellation_policy: isHotel ? (form.cancellation_policy || null) : null,
     })
   }
 
@@ -255,6 +279,82 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
                       />
                     </div>
                   )}
+                </>
+              )}
+
+              {/* Hotel-only: Supplier & Payment sections */}
+              {isHotel && (
+                <>
+                  <div className="form-section-label">Supplier / Contact</div>
+
+                  <div className="form-group">
+                    <label>Contact Person</label>
+                    <input
+                      name="contact_person"
+                      value={form.contact_person}
+                      onChange={handleChange}
+                      placeholder="e.g. Ahmed Benali"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Phone / WhatsApp</label>
+                    <input
+                      name="contact_phone"
+                      type="tel"
+                      value={form.contact_phone}
+                      onChange={handleChange}
+                      placeholder="+212 6 XX XX XX XX"
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label>Email</label>
+                    <input
+                      name="contact_email"
+                      type="email"
+                      value={form.contact_email}
+                      onChange={handleChange}
+                      placeholder="reservations@hotel.com"
+                    />
+                  </div>
+
+                  <div className="form-section-label">Payment Terms</div>
+
+                  <div className="form-group">
+                    <label>Default Deposit %</label>
+                    <input
+                      name="default_deposit_pct"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={form.default_deposit_pct}
+                      onChange={handleChange}
+                      placeholder="e.g. 50"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Payment Terms</label>
+                    <input
+                      name="payment_terms"
+                      value={form.payment_terms}
+                      onChange={handleChange}
+                      placeholder="e.g. 50% deposit, balance 7 days before"
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label>Cancellation Policy</label>
+                    <textarea
+                      name="cancellation_policy"
+                      value={form.cancellation_policy}
+                      onChange={handleChange}
+                      rows={2}
+                      placeholder="e.g. Free cancellation 14 days before..."
+                    />
+                  </div>
                 </>
               )}
 
