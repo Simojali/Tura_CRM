@@ -59,8 +59,11 @@ export const HOTEL_TYPES = [
 export const RESERV_STATUSES = ['Quotation', 'Confirmed', 'Completed', 'Cancelled']
 
 export const HOTEL_STATUS_LABELS = {
+  draft: 'Draft',
   requested: 'Requested',
   confirmed: 'Confirmed',
+  declined: 'Declined',
+  modified: 'Modified',
   cancelled: 'Cancelled',
 }
 

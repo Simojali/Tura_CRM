@@ -2,13 +2,64 @@ import { useState, useEffect, useMemo } from 'react'
 import { loadReferenceData } from '../lib/referenceData'
 import { fmtDate, fmtCost, fmtRooms } from '../lib/formatters'
 import { HOTEL_STATUS_LABELS as STATUS_LABELS } from '../lib/constants'
+import HotelMessageModal from './HotelMessageModal'
+
+/* ── SVG Icons ── */
+const sz = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
+
+const IconSend = () => (
+  <svg {...sz}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+)
+const IconRefresh = () => (
+  <svg {...sz}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+)
+const IconCheck = () => (
+  <svg {...sz}><polyline points="20 6 9 17 4 12"/></svg>
+)
+const IconX = () => (
+  <svg {...sz}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+)
+const IconEdit = () => (
+  <svg {...sz}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+)
+const IconBan = () => (
+  <svg {...sz}><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+)
+const IconClipboard = () => (
+  <svg {...sz}><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+)
+const IconMail = () => (
+  <svg {...sz}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
+)
+const IconTrash = () => (
+  <svg {...sz}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+)
+const IconUndo = () => (
+  <svg {...sz}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+)
+const IconXCircle = () => (
+  <svg {...sz}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+)
 
 const HOTEL_STATUSES = [
   { value: 'all',       label: 'All' },
+  { value: 'draft',     label: 'Draft' },
   { value: 'requested', label: 'Requested' },
   { value: 'confirmed', label: 'Confirmed' },
   { value: 'cancelled', label: 'Cancelled' },
 ]
+
+// Status-changing event types (follow-up is informational, doesn't change status)
+const STATUS_EVENTS = new Set(['requested', 'confirmed', 'declined', 'modified', 'cancelled'])
+
+function getStatus(entry) {
+  const timeline = entry.timeline || []
+  if (timeline.length === 0) return 'draft'
+  for (let i = timeline.length - 1; i >= 0; i--) {
+    if (STATUS_EVENTS.has(timeline[i].type)) return timeline[i].type
+  }
+  return 'draft'
+}
 
 const genId = () => crypto.randomUUID()
 
@@ -18,7 +69,53 @@ function computeNights(checkin, checkout) {
   return diff > 0 ? diff : 0
 }
 
-const EMPTY_FORM = { refId: '', checkin: '', checkout: '', status: 'requested', confirmRef: '' }
+const EMPTY_FORM = { refId: '', checkin: '', checkout: '' }
+
+const TIMELINE_TYPES = [
+  { value: 'requested',  label: 'Requested',  icon: <IconSend /> },
+  { value: 'follow-up',  label: 'Follow-up',  icon: <IconRefresh /> },
+  { value: 'confirmed',  label: 'Confirmed',  icon: <IconCheck /> },
+  { value: 'declined',   label: 'Declined',   icon: <IconX /> },
+  { value: 'modified',   label: 'Modified',    icon: <IconEdit /> },
+  { value: 'cancelled',  label: 'Cancelled',   icon: <IconBan /> },
+]
+
+const TIMELINE_TYPE_LABELS = {
+  requested: 'Requested',
+  'follow-up': 'Follow-up',
+  confirmed: 'Confirmed',
+  declined: 'Declined',
+  modified: 'Modified',
+  cancelled: 'Cancelled',
+}
+
+const TIMELINE_METHODS = [
+  { value: 'email',    label: 'Email' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'phone',    label: 'Phone' },
+]
+
+function createTimelineEvent(type, method = 'email', note = '', ref = '') {
+  return {
+    id: crypto.randomUUID(),
+    date: new Date().toISOString(),
+    type,
+    method,
+    note,
+    ...(ref ? { ref } : {}),
+  }
+}
+
+function fmtTimeline(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d)) return dateStr
+  const day = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return `${day} ${time}`
+}
+
+const EMPTY_TL_FORM = { type: 'follow-up', method: 'email', note: '', ref: '' }
 
 export default function HotelsTab({ booking, itinerary = [], hotels = [], onSaveHotels }) {
   const [refHotels, setRefHotels] = useState([])
@@ -28,6 +125,10 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [openMenuId, setOpenMenuId] = useState(null)
+  const [expandedTimelineId, setExpandedTimelineId] = useState(null)
+  const [timelineForm, setTimelineForm] = useState(EMPTY_TL_FORM)
+  const [showTimelineForm, setShowTimelineForm] = useState(null)
+  const [messageModalHotel, setMessageModalHotel] = useState(null)
 
   // Load reference hotels
   useEffect(() => {
@@ -172,12 +273,12 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
   const filtered = useMemo(() =>
     filterStatus === 'all'
       ? hotels
-      : hotels.filter((h) => (h.status || 'requested') === filterStatus),
+      : hotels.filter((h) => getStatus(h) === filterStatus),
     [hotels, filterStatus]
   )
 
   const countByStatus = (status) =>
-    hotels.filter((h) => (h.status || 'requested') === status).length
+    hotels.filter((h) => getStatus(h) === status).length
 
   const renderHotelOptions = () =>
     Object.entries(hotelsByCity).map(([city, cityHotels]) => (
@@ -192,7 +293,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
 
   // ── Add ──────────────────────────────────────────────────────────────
   const addHotel = () => {
-    const { refId, checkin, checkout, status, confirmRef } = addForm
+    const { refId, checkin, checkout } = addForm
     if (!refId || !checkin || !checkout) return
     const nights = computeNights(checkin, checkout)
     if (nights <= 0) { alert('Check-out must be after check-in.'); return }
@@ -210,8 +311,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
       checkin,
       checkout,
       nights,
-      status,
-      confirmation_ref: confirmRef,
+      timeline: [],
     }
     onSaveHotels([...hotels, entry])
     setShowAddForm(false)
@@ -224,8 +324,6 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
       refId: entry.ref_id || '',
       checkin: entry.checkin || '',
       checkout: entry.checkout || '',
-      status: entry.status || 'requested',
-      confirmRef: entry.confirmation_ref || '',
     })
     setEditingId(entry.id)
     setOpenMenuId(null)
@@ -248,8 +346,6 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
         checkin: editForm.checkin,
         checkout: editForm.checkout,
         nights,
-        status: editForm.status,
-        confirmation_ref: editForm.confirmRef,
       }
     )
     onSaveHotels(updated)
@@ -257,8 +353,18 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
   }
 
   // ── Status / Delete ───────────────────────────────────────────────────
-  const markStatus = (entry, status) => {
-    onSaveHotels(hotels.map((h) => h.id === entry.id ? { ...h, status } : h))
+  const markStatus = (entry, eventType) => {
+    const note =
+      eventType === 'confirmed' ? 'Marked as confirmed' :
+      eventType === 'cancelled' ? 'Cancelled' :
+      eventType === 'requested' ? 'Restored to requested' :
+      'Status changed to ' + eventType
+    const event = createTimelineEvent(eventType, 'email', note)
+    onSaveHotels(hotels.map((h) =>
+      h.id === entry.id
+        ? { ...h, timeline: [...(h.timeline || []), event] }
+        : h
+    ))
     setOpenMenuId(null)
   }
 
@@ -267,6 +373,26 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
     onSaveHotels(hotels.filter((h) => h.id !== entry.id))
     setOpenMenuId(null)
     if (editingId === entry.id) setEditingId(null)
+  }
+
+  // ── Timeline ──────────────────────────────────────────────────────────
+  const addTimelineEvent = (entryId) => {
+    const event = createTimelineEvent(timelineForm.type, timelineForm.method, timelineForm.note, timelineForm.ref)
+    onSaveHotels(hotels.map((h) =>
+      h.id === entryId
+        ? { ...h, timeline: [...(h.timeline || []), event] }
+        : h
+    ))
+    setTimelineForm(EMPTY_TL_FORM)
+    setShowTimelineForm(null)
+  }
+
+  const removeTimelineEvent = (entryId, eventId) => {
+    onSaveHotels(hotels.map((h) =>
+      h.id === entryId
+        ? { ...h, timeline: (h.timeline || []).filter((e) => e.id !== eventId) }
+        : h
+    ))
   }
 
   return (
@@ -352,31 +478,6 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
             </div>
           )}
 
-          <div className="tab-add-field">
-            <label>Status</label>
-            <select
-              className="tr-edit-input"
-              value={addForm.status}
-              onChange={(e) => setAddForm((f) => ({ ...f, status: e.target.value }))}
-            >
-              {HOTEL_STATUSES.filter((s) => s.value !== 'all').map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {addForm.status === 'confirmed' && (
-            <div className="tab-add-field">
-              <label>Confirmation Ref</label>
-              <input
-                className="tr-edit-input"
-                placeholder="Supplier confirmation number"
-                value={addForm.confirmRef}
-                onChange={(e) => setAddForm((f) => ({ ...f, confirmRef: e.target.value }))}
-              />
-            </div>
-          )}
-
           <div className="tab-add-actions">
             <button
               className="btn btn-success"
@@ -400,6 +501,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
       ) : (
         <div className="hotels-list">
           <div className="hotels-list-header">
+            <span />
             <span className="ht-col-hotel">Hotel</span>
             <span className="ht-col-dates">Check-in / Out</span>
             <span className="ht-col-nights">Nights</span>
@@ -407,12 +509,23 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
             <span className="ht-col-status">Status</span>
             <span className="ht-col-ref">Ref</span>
             <span className="ht-col-cost">Cost</span>
+            <span className="ht-col-activity">Status Log</span>
             <span className="ht-col-menu" />
           </div>
 
           {filtered.map((entry) => (
             <div key={entry.id}>
-              <div className={`hotels-row${entry.status === 'cancelled' ? ' cancelled' : ''}`}>
+              <div className={`hotels-row${getStatus(entry) === 'cancelled' ? ' cancelled' : ''}`}>
+
+                {/* Chevron toggle */}
+                <button
+                  className={`ht-chevron${expandedTimelineId === entry.id ? ' expanded' : ''}`}
+                  onClick={() => setExpandedTimelineId(expandedTimelineId === entry.id ? null : entry.id)}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
 
                 {/* Hotel name + tier */}
                 <div className="ht-hotel">
@@ -435,8 +548,8 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
 
                 {/* Status */}
                 <div className="ht-status">
-                  <span className={`itin-status-badge status-${entry.status || 'requested'}`}>
-                    {STATUS_LABELS[entry.status || 'requested']}
+                  <span className={`itin-status-badge status-${getStatus(entry)}`}>
+                    {STATUS_LABELS[getStatus(entry)]}
                   </span>
                 </div>
 
@@ -453,39 +566,49 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                   <span className="ht-cost-total"> · {fmtCost(entry.cost_per_night * entry.nights)} total</span>
                 </div>
 
-                {/* ⋮ Menu */}
+                {/* Activity badge */}
+                <button
+                  className={`ht-activity-badge${(entry.timeline || []).length > 0 ? ' has-events' : ''}`}
+                  onClick={() => setExpandedTimelineId(expandedTimelineId === entry.id ? null : entry.id)}
+                >
+                  {(entry.timeline || []).length > 0
+                    ? `${(entry.timeline || []).length} event${(entry.timeline || []).length !== 1 ? 's' : ''}`
+                    : 'No logs'}
+                </button>
+
+                {/* Actions */}
                 <div className="ht-actions">
+                  <button
+                    className="ht-action-icon"
+                    title="Generate Message"
+                    onClick={(e) => { e.stopPropagation(); setMessageModalHotel(entry) }}
+                  ><IconMail /></button>
                   <button
                     className="ht-menu-btn"
                     onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === entry.id ? null : entry.id) }}
                   >⋮</button>
                   {openMenuId === entry.id && (
                     <div className="ht-menu" onClick={(e) => e.stopPropagation()}>
-                      {entry.status !== 'confirmed' && (
+                      {getStatus(entry) !== 'confirmed' && (
                         <button className="ht-menu-item" onClick={() => markStatus(entry, 'confirmed')}>
-                          ✅ Mark Confirmed
+                          <IconCheck /> Mark Confirmed
                         </button>
                       )}
                       <button className="ht-menu-item" onClick={() => startEdit(entry)}>
-                        ✏️ Edit
+                        <IconEdit /> Edit
                       </button>
-                      {entry.status === 'confirmed' && (
+                      {(getStatus(entry) === 'confirmed' || getStatus(entry) === 'cancelled') && (
                         <button className="ht-menu-item" onClick={() => markStatus(entry, 'requested')}>
-                          ↺ Reset to Requested
+                          <IconUndo /> Restore to Requested
                         </button>
                       )}
-                      {entry.status !== 'cancelled' && (
+                      {getStatus(entry) !== 'cancelled' && (
                         <button className="ht-menu-item danger" onClick={() => markStatus(entry, 'cancelled')}>
-                          ✕ Cancel
-                        </button>
-                      )}
-                      {entry.status === 'cancelled' && (
-                        <button className="ht-menu-item" onClick={() => markStatus(entry, 'requested')}>
-                          ↺ Restore
+                          <IconXCircle /> Cancel
                         </button>
                       )}
                       <button className="ht-menu-item danger" onClick={() => deleteHotel(entry)}>
-                        🗑️ Delete
+                        <IconTrash /> Delete
                       </button>
                     </div>
                   )}
@@ -529,27 +652,6 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                         onChange={(e) => setEditForm((f) => ({ ...f, checkout: e.target.value }))}
                       />
                     </div>
-                    <div>
-                      <label className="tr-edit-label">Status</label>
-                      <select
-                        className="tr-edit-input"
-                        value={editForm.status}
-                        onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
-                      >
-                        {HOTEL_STATUSES.filter((s) => s.value !== 'all').map((s) => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="tr-edit-label">Confirmation Ref</label>
-                      <input
-                        className="tr-edit-input"
-                        placeholder="Supplier confirmation number"
-                        value={editForm.confirmRef}
-                        onChange={(e) => setEditForm((f) => ({ ...f, confirmRef: e.target.value }))}
-                      />
-                    </div>
                   </div>
                   <div className="tr-edit-actions">
                     <button className="btn btn-success" onClick={() => saveEdit(entry)}>Save</button>
@@ -557,9 +659,118 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                   </div>
                 </div>
               )}
+
+              {/* Timeline section */}
+              {expandedTimelineId === entry.id && (
+                <div className="ht-timeline">
+                  <div className="ht-timeline-header">
+                    <span className="ht-timeline-title">Status Log Timeline</span>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => {
+                        setShowTimelineForm(showTimelineForm === entry.id ? null : entry.id)
+                        setTimelineForm(EMPTY_TL_FORM)
+                      }}
+                    >
+                      + Log Status
+                    </button>
+                  </div>
+
+                  {/* Inline add form */}
+                  {showTimelineForm === entry.id && (
+                    <div className="ht-timeline-form">
+                      <div className="ht-tl-form-row">
+                        <select
+                          className="tr-edit-input"
+                          value={timelineForm.type}
+                          onChange={(e) => setTimelineForm((f) => ({ ...f, type: e.target.value }))}
+                        >
+                          {TIMELINE_TYPES.map((t) => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                          ))}
+                        </select>
+                        <select
+                          className="tr-edit-input"
+                          value={timelineForm.method}
+                          onChange={(e) => setTimelineForm((f) => ({ ...f, method: e.target.value }))}
+                        >
+                          {TIMELINE_METHODS.map((m) => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                          ))}
+                        </select>
+                        <input
+                          className="tr-edit-input"
+                          placeholder="Note (optional)"
+                          value={timelineForm.note}
+                          onChange={(e) => setTimelineForm((f) => ({ ...f, note: e.target.value }))}
+                        />
+                        <input
+                          className="tr-edit-input"
+                          placeholder="Ref # (optional)"
+                          value={timelineForm.ref}
+                          onChange={(e) => setTimelineForm((f) => ({ ...f, ref: e.target.value }))}
+                          style={{ maxWidth: 140 }}
+                        />
+                      </div>
+                      <div className="ht-tl-form-actions">
+                        <button className="btn btn-success btn-sm" onClick={() => addTimelineEvent(entry.id)}>
+                          Save
+                        </button>
+                        <button className="btn btn-outline btn-sm" onClick={() => setShowTimelineForm(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Event list */}
+                  <div className="ht-timeline-events">
+                    {(entry.timeline || []).length === 0 ? (
+                      <div className="ht-timeline-empty">No status logged yet.</div>
+                    ) : (
+                      (entry.timeline || []).map((evt) => {
+                        const typeInfo = TIMELINE_TYPES.find((t) => t.value === evt.type) || TIMELINE_TYPES[0]
+                        return (
+                          <div key={evt.id} className="ht-tl-event">
+                            <span className="ht-tl-icon">{typeInfo.icon}</span>
+                            <span className={`ht-tl-type ht-tl-type-${evt.type}`}>{typeInfo.label}</span>
+                            <span className="ht-tl-method">{evt.method}</span>
+                            {evt.note && <span className="ht-tl-note">{evt.note}</span>}
+                            {evt.ref && <span className="ht-tl-ref">#{evt.ref}</span>}
+                            <span className="ht-tl-date">{fmtTimeline(evt.date)}</span>
+                            <button
+                              className="ht-tl-delete"
+                              title="Remove event"
+                              onClick={() => removeTimelineEvent(entry.id, evt.id)}
+                            >×</button>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
+      )}
+
+      {/* Message Generator Modal */}
+      {messageModalHotel && (
+        <HotelMessageModal
+          hotel={messageModalHotel}
+          booking={booking}
+          refHotel={refHotels.find((r) => r.id === messageModalHotel.ref_id) || null}
+          onClose={() => setMessageModalHotel(null)}
+          onLogActivity={(entryId, type, method, note) => {
+            const event = createTimelineEvent(type, method, note)
+            onSaveHotels(hotels.map((h) =>
+              h.id === entryId
+                ? { ...h, timeline: [...(h.timeline || []), event] }
+                : h
+            ))
+          }}
+        />
       )}
     </div>
   )

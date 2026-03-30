@@ -1831,9 +1831,12 @@ tbody tr:hover {
   flex-shrink: 0;
 }
 
+.status-draft     { background: #e5e7eb; color: #9ca3af; }
 .status-requested { background: #f3f4f6; color: #6b7280; }
 .status-confirmed { background: #d4ede1; color: #0f3d25; }
 .status-done      { background: #0f3d25; color: #ffffff; }
+.status-declined  { background: #fef3c7; color: #92400e; }
+.status-modified  { background: #ede9fe; color: #6d28d9; }
 .status-cancelled { background: #fee2e2; color: #dc2626; text-decoration: line-through; }
 
 /* ── Itinerary: inline edit fields (Phase 2) ── */
@@ -2464,7 +2467,7 @@ tbody tr:hover {
 
 .hotels-tab-title-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
@@ -2535,7 +2538,7 @@ tbody tr:hover {
 .hotels-list-header,
 .hotels-row {
   display: grid;
-  grid-template-columns: 1fr 150px 55px 110px 110px 100px 160px 40px;
+  grid-template-columns: 20px 1.2fr 190px 45px 90px 75px 70px 1fr 65px 50px;
   align-items: center;
   gap: 0.75rem;
   padding: 0.65rem 1.25rem;
@@ -2557,6 +2560,41 @@ tbody tr:hover {
 
 .hotels-row:last-child { border-bottom: none; }
 .hotels-row.cancelled { opacity: 0.55; }
+
+/* Chevron toggle */
+.ht-chevron {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-light);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, color 0.15s;
+}
+.ht-chevron:hover { color: var(--color-text); }
+.ht-chevron.expanded { transform: rotate(90deg); color: var(--color-primary); }
+
+/* Activity badge */
+.ht-activity-badge {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--color-text-light);
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  background: var(--color-bg-alt);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.ht-activity-badge:hover { background: var(--color-border); color: var(--color-text); }
+.ht-activity-badge.has-events {
+  background: rgba(26, 102, 64, 0.12);
+  color: var(--color-primary);
+  font-weight: 500;
+}
 
 /* Day & Date cell */
 .ht-day { display: block; font-size: 0.8rem; color: var(--color-text-light); }
@@ -2604,7 +2642,20 @@ tbody tr:hover {
 .ht-ref-value { font-size: 0.8rem; font-family: monospace; }
 .ht-ref-empty { color: var(--color-text-light); }
 
-.ht-actions { position: relative; display: flex; justify-content: flex-end; }
+.ht-actions { position: relative; display: flex; align-items: center; gap: 0.25rem; justify-content: flex-end; }
+
+.ht-action-icon {
+  background: var(--color-primary);
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  padding: 0.35rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.15s;
+}
+.ht-action-icon:hover { opacity: 0.8; }
 
 .ht-menu-btn {
   background: none;
@@ -2612,9 +2663,11 @@ tbody tr:hover {
   cursor: pointer;
   font-size: 1.1rem;
   color: var(--color-text-light);
-  padding: 0.15rem 0.4rem;
+  padding: 0.25rem 0.4rem;
   border-radius: var(--radius-sm);
   line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .ht-menu-btn:hover { background: var(--color-bg); color: var(--color-text); }
@@ -2633,7 +2686,9 @@ tbody tr:hover {
 }
 
 .ht-menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   width: 100%;
   padding: 0.55rem 1rem;
   text-align: left;
@@ -2644,6 +2699,7 @@ tbody tr:hover {
   cursor: pointer;
   transition: background 0.1s;
 }
+.ht-menu-item svg { flex-shrink: 0; }
 
 .ht-menu-item:hover { background: var(--color-bg); }
 .ht-menu-item.danger { color: var(--color-danger); }
@@ -2652,6 +2708,207 @@ tbody tr:hover {
   padding: 1rem 1.25rem;
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
+}
+
+/* ── Timeline ── */
+.ht-timeline {
+  padding: 1rem 1.25rem;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+.ht-timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.ht-timeline-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.ht-timeline-form {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.ht-tl-form-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.ht-tl-form-row .tr-edit-input {
+  flex: 1;
+  min-width: 120px;
+}
+.ht-tl-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.ht-timeline-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.ht-timeline-empty {
+  text-align: center;
+  padding: 1.25rem;
+  color: var(--color-text-light);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+.ht-tl-event {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+}
+.ht-tl-icon { flex-shrink: 0; display: flex; align-items: center; color: var(--color-text-light); }
+.ht-tl-type {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+.ht-tl-type-confirmed { color: var(--color-success); }
+.ht-tl-type-declined,
+.ht-tl-type-cancelled { color: var(--color-danger); }
+.ht-tl-type-requested { color: var(--color-primary); }
+.ht-tl-type-follow-up { color: #e67e22; }
+.ht-tl-type-modified { color: #8e44ad; }
+.ht-tl-method {
+  background: var(--color-bg-alt);
+  color: var(--color-text-light);
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.ht-tl-note {
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ht-tl-ref {
+  color: var(--color-primary);
+  font-weight: 500;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+.ht-tl-date {
+  color: var(--color-text-light);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.ht-tl-delete {
+  background: none;
+  border: none;
+  color: var(--color-text-light);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.ht-tl-event:hover .ht-tl-delete { opacity: 1; }
+.ht-tl-delete:hover { color: var(--color-danger); }
+
+/* ── Message Generator Modal ── */
+.msg-modal { max-width: 640px; }
+.msg-hotel-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background: var(--color-bg-alt);
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+}
+.msg-hotel-dates { color: var(--color-text-light); }
+.msg-contact-info { color: var(--color-text-light); font-size: 0.75rem; }
+.msg-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.msg-lang-toggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.msg-lang-btn {
+  background: var(--color-card);
+  border: none;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--color-text-light);
+  transition: all 0.15s;
+}
+.msg-lang-btn:not(:last-child) { border-right: 1px solid var(--color-border); }
+.msg-lang-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+.msg-template-select { flex: 1; min-width: 180px; }
+.msg-textarea {
+  width: 100%;
+  min-height: 320px;
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  resize: vertical;
+  background: var(--color-card);
+  color: var(--color-text);
+}
+.msg-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+.msg-edited-hint {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+}
+.msg-reset-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.75rem;
+  text-decoration: underline;
+}
+.btn-copied {
+  background: var(--color-success) !important;
+  border-color: var(--color-success) !important;
+}
+.btn-sm {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
 }
 
 .hotels-empty {
