@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { loadReferenceData } from '../lib/referenceData'
 import { fmtDate, fmtCost, fmtRooms } from '../lib/formatters'
 import { HOTEL_STATUS_LABELS as STATUS_LABELS } from '../lib/constants'
@@ -117,6 +117,64 @@ function fmtTimeline(dateStr) {
 
 const EMPTY_TL_FORM = { type: 'follow-up', method: 'email', note: '', ref: '' }
 
+/* ── DayPicker ── */
+function DayPicker({ value, onChange, itinerary, minDate }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const days = [...itinerary].sort((a, b) => a.day - b.day)
+  const selected = days.find((d) => d.date === value)
+
+  return (
+    <div ref={ref} className="day-picker">
+      <button
+        type="button"
+        className={`dp-trigger${open ? ' open' : ''}`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {selected ? (
+          <>
+            <span className="dp-day-badge">D{selected.day}</span>
+            <span className="dp-date">{fmtDate(selected.date)}</span>
+            <span className="dp-city">{selected.city}</span>
+          </>
+        ) : (
+          <span className="dp-placeholder">— Select day —</span>
+        )}
+        <svg className="dp-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div className="dp-panel">
+          {days.map((d) => {
+            const disabled = minDate ? d.date <= minDate : false
+            return (
+              <button
+                key={d.date}
+                type="button"
+                className={`dp-option${value === d.date ? ' selected' : ''}${disabled ? ' disabled' : ''}`}
+                onClick={() => { if (!disabled) { onChange(d.date); setOpen(false) } }}
+              >
+                <span className="dp-day-badge">D{d.day}</span>
+                <span className="dp-date">{fmtDate(d.date)}</span>
+                <span className="dp-city">{d.city}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function HotelsTab({ booking, itinerary = [], hotels = [], onSaveHotels }) {
   const [refHotels, setRefHotels] = useState([])
   const [filterStatus, setFilterStatus] = useState('all')
@@ -144,8 +202,6 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
     return () => document.removeEventListener('click', close)
   }, [])
 
-  // No longer auto-populate full trip dates — dates are auto-filled based on hotel city
-
   // Group reference hotels by city for <optgroup>
   const hotelsByCity = useMemo(() => {
     return refHotels.reduce((acc, h) => {
@@ -154,68 +210,6 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
       return acc
     }, {})
   }, [refHotels])
-
-  // ── Trip date bounds ─────────────────────────────────────────────────
-  const tripStart = booking.check_in || ''
-  const tripEnd = booking.check_out || ''
-
-  // Split city appearances into contiguous blocks (handles gaps from other cities)
-  const getCityBlocks = (city) => {
-    if (!city || !itinerary.length) return []
-    const cityRows = itinerary.filter((r) => r.city === city).sort((a, b) => a.date.localeCompare(b.date))
-    if (cityRows.length === 0) return []
-
-    const blocks = []
-    let blockStart = cityRows[0]
-    let blockEnd = cityRows[0]
-
-    for (let i = 1; i < cityRows.length; i++) {
-      const prev = new Date(blockEnd.date)
-      const curr = new Date(cityRows[i].date)
-      const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24))
-      if (diffDays === 1) {
-        blockEnd = cityRows[i]
-      } else {
-        blocks.push({ startRow: blockStart, endRow: blockEnd })
-        blockStart = cityRows[i]
-        blockEnd = cityRows[i]
-      }
-    }
-    blocks.push({ startRow: blockStart, endRow: blockEnd })
-
-    const lastItinDay = itinerary.reduce((max, r) => r.date > max ? r.date : max, itinerary[0]?.date || '')
-    return blocks.map((b) => {
-      const isLastDayOfTrip = b.endRow.date === lastItinDay
-      let checkoutDate
-      if (isLastDayOfTrip) {
-        // Last day of trip = departure day, no overnight stay — checkout is that same day
-        checkoutDate = b.endRow.date
-      } else {
-        // Mid-trip block: checkout = day after last city day
-        const last = new Date(b.endRow.date)
-        last.setDate(last.getDate() + 1)
-        const mm = String(last.getMonth() + 1).padStart(2, '0')
-        const dd = String(last.getDate()).padStart(2, '0')
-        checkoutDate = `${last.getFullYear()}-${mm}-${dd}`
-      }
-      return {
-        checkin: b.startRow.date,
-        checkout: checkoutDate,
-        dayIn: b.startRow.day,
-        dayOut: isLastDayOfTrip ? b.endRow.day : b.endRow.day + 1,
-      }
-    })
-  }
-
-  // Find the first city block that doesn't already have a hotel covering it
-  const getAvailableBlock = (city, excludeHotelId) => {
-    const blocks = getCityBlocks(city)
-    if (blocks.length === 0) return null
-    const otherHotels = hotels.filter((h) => h.id !== excludeHotelId)
-    return blocks.find((block) =>
-      !otherHotels.some((h) => h.checkin === block.checkin && h.checkout === block.checkout)
-    ) || blocks[0]
-  }
 
   // Look up itinerary day number for a given date
   const getDayNum = (date) => {
@@ -232,37 +226,8 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
     return prevRow ? prevRow.day + 1 : null
   }
 
-  // When a hotel is selected in the add form, auto-fill dates from its city
-  const handleHotelSelect = (refId) => {
-    const hotel = refHotels.find((h) => h.id === refId)
-    if (hotel) {
-      const block = getAvailableBlock(hotel.city)
-      setAddForm((f) => ({
-        ...f,
-        refId,
-        checkin: block?.checkin || f.checkin,
-        checkout: block?.checkout || f.checkout,
-      }))
-    } else {
-      setAddForm((f) => ({ ...f, refId }))
-    }
-  }
-
-  // When a hotel is selected in the edit form, auto-fill dates from its city
-  const handleEditHotelSelect = (refId) => {
-    const hotel = refHotels.find((h) => h.id === refId)
-    if (hotel) {
-      const block = getAvailableBlock(hotel.city, editingId)
-      setEditForm((f) => ({
-        ...f,
-        refId,
-        checkin: block?.checkin || f.checkin,
-        checkout: block?.checkout || f.checkout,
-      }))
-    } else {
-      setEditForm((f) => ({ ...f, refId }))
-    }
-  }
+  const handleHotelSelect = (refId) => setAddForm((f) => ({ ...f, refId }))
+  const handleEditHotelSelect = (refId) => setEditForm((f) => ({ ...f, refId }))
 
   const s = Number(booking.single_rooms) || 0
   const d = Number(booking.double_rooms) || 0
@@ -433,6 +398,25 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
         <div className="tab-add-form">
           <div className="tab-add-form-title">Add Hotel</div>
 
+          <div className="tab-add-field">
+            <label>Check-in</label>
+            <DayPicker
+              value={addForm.checkin}
+              onChange={(d) => setAddForm((f) => ({ ...f, checkin: d }))}
+              itinerary={itinerary}
+            />
+          </div>
+
+          <div className="tab-add-field">
+            <label>Check-out</label>
+            <DayPicker
+              value={addForm.checkout}
+              onChange={(d) => setAddForm((f) => ({ ...f, checkout: d }))}
+              itinerary={itinerary}
+              minDate={addForm.checkin}
+            />
+          </div>
+
           <div className="tab-add-field wide">
             <label>Hotel</label>
             <select
@@ -443,30 +427,6 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
               <option value="">— Select hotel —</option>
               {renderHotelOptions()}
             </select>
-          </div>
-
-          <div className="tab-add-field">
-            <label>Check-in {addForm.checkin && getDayNum(addForm.checkin) ? <span className="ht-day-badge">D{getDayNum(addForm.checkin)}</span> : ''}</label>
-            <input
-              type="date"
-              className="tr-edit-input"
-              value={addForm.checkin}
-              min={tripStart}
-              max={tripEnd}
-              onChange={(e) => setAddForm((f) => ({ ...f, checkin: e.target.value }))}
-            />
-          </div>
-
-          <div className="tab-add-field">
-            <label>Check-out {addForm.checkout && getDayNum(addForm.checkout) ? <span className="ht-day-badge">D{getDayNum(addForm.checkout)}</span> : ''}</label>
-            <input
-              type="date"
-              className="tr-edit-input"
-              value={addForm.checkout}
-              min={tripStart}
-              max={tripEnd}
-              onChange={(e) => setAddForm((f) => ({ ...f, checkout: e.target.value }))}
-            />
           </div>
 
           {addForm.checkin && addForm.checkout && (
@@ -631,25 +591,20 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                       </select>
                     </div>
                     <div>
-                      <label className="tr-edit-label">Check-in {editForm.checkin && getDayNum(editForm.checkin) ? <span className="ht-day-badge">D{getDayNum(editForm.checkin)}</span> : ''}</label>
-                      <input
-                        type="date"
-                        className="tr-edit-input"
+                      <label className="tr-edit-label">Check-in</label>
+                      <DayPicker
                         value={editForm.checkin}
-                        min={tripStart}
-                        max={tripEnd}
-                        onChange={(e) => setEditForm((f) => ({ ...f, checkin: e.target.value }))}
+                        onChange={(d) => setEditForm((f) => ({ ...f, checkin: d }))}
+                        itinerary={itinerary}
                       />
                     </div>
                     <div>
-                      <label className="tr-edit-label">Check-out {editForm.checkout && getDayNum(editForm.checkout) ? <span className="ht-day-badge">D{getDayNum(editForm.checkout)}</span> : ''}</label>
-                      <input
-                        type="date"
-                        className="tr-edit-input"
+                      <label className="tr-edit-label">Check-out</label>
+                      <DayPicker
                         value={editForm.checkout}
-                        min={tripStart}
-                        max={tripEnd}
-                        onChange={(e) => setEditForm((f) => ({ ...f, checkout: e.target.value }))}
+                        onChange={(d) => setEditForm((f) => ({ ...f, checkout: d }))}
+                        itinerary={itinerary}
+                        minDate={editForm.checkin}
                       />
                     </div>
                   </div>
