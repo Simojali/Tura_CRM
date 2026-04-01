@@ -2538,7 +2538,7 @@ tbody tr:hover {
 .hotels-list-header,
 .hotels-row {
   display: grid;
-  grid-template-columns: 20px 1.2fr 190px 45px 90px 75px 70px 1fr 65px 50px;
+  grid-template-columns: 20px 1.2fr 190px 45px 90px 75px 70px 1fr 75px 50px;
   align-items: center;
   gap: 0.75rem;
   padding: 0.65rem 1.25rem;
@@ -2588,6 +2588,14 @@ tbody tr:hover {
   background: var(--color-bg-alt);
   transition: all 0.15s;
   white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+.ht-badge-ago {
+  font-size: 0.65rem;
+  opacity: 0.75;
 }
 .ht-activity-badge:hover { background: var(--color-border); color: var(--color-text); }
 .ht-activity-badge.has-events {
@@ -2812,6 +2820,12 @@ tbody tr:hover {
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
+.ht-tl-staleness {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  margin-left: auto;
+  margin-right: 0.5rem;
+}
 .ht-timeline-form {
   background: var(--color-card);
   border: 1px solid var(--color-border);
@@ -2897,6 +2911,11 @@ tbody tr:hover {
   font-size: 0.75rem;
   flex-shrink: 0;
   margin-left: auto;
+}
+.ht-tl-elapsed {
+  color: var(--color-text-light);
+  font-size: 0.75rem;
+  opacity: 0.7;
 }
 .ht-tl-delete {
   background: none;

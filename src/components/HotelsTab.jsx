@@ -61,6 +61,14 @@ function getStatus(entry) {
   return 'draft'
 }
 
+function getConfirmRef(entry) {
+  const timeline = entry.timeline || []
+  for (let i = timeline.length - 1; i >= 0; i--) {
+    if (timeline[i].type === 'confirmed' && timeline[i].ref) return timeline[i].ref
+  }
+  return ''
+}
+
 const genId = () => crypto.randomUUID()
 
 function computeNights(checkin, checkout) {
@@ -113,6 +121,19 @@ function fmtTimeline(dateStr) {
   const day = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   return `${day} ${time}`
+}
+
+function fmtElapsed(prevDate, currDate) {
+  if (!prevDate || !currDate) return ''
+  const ms = new Date(currDate) - new Date(prevDate)
+  if (ms < 0) return ''
+  const mins = Math.floor(ms / 60000)
+  const hrs = Math.floor(ms / 3600000)
+  const days = Math.floor(ms / 86400000)
+  if (days >= 7) return `${Math.floor(days / 7)}w`
+  if (days >= 1) return `${days}d`
+  if (hrs >= 1) return `${hrs}h`
+  return `${mins}m`
 }
 
 const EMPTY_TL_FORM = { type: 'follow-up', method: 'email', note: '', ref: '' }
@@ -515,8 +536,8 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
 
                 {/* Ref */}
                 <div className="ht-ref">
-                  {entry.confirmation_ref
-                    ? <span className="ht-ref-value">{entry.confirmation_ref}</span>
+                  {getConfirmRef(entry)
+                    ? <span className="ht-ref-value">{getConfirmRef(entry)}</span>
                     : <span className="ht-ref-empty">—</span>}
                 </div>
 
@@ -532,7 +553,10 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                   onClick={() => setExpandedTimelineId(expandedTimelineId === entry.id ? null : entry.id)}
                 >
                   {(entry.timeline || []).length > 0
-                    ? `${(entry.timeline || []).length} event${(entry.timeline || []).length !== 1 ? 's' : ''}`
+                    ? <>
+                        <span>{(entry.timeline || []).length} event{(entry.timeline || []).length !== 1 ? 's' : ''}</span>
+                        <span className="ht-badge-ago">{fmtElapsed(entry.timeline[entry.timeline.length - 1].date, new Date().toISOString())} ago</span>
+                      </>
                     : 'No logs'}
                 </button>
 
@@ -620,6 +644,11 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                 <div className="ht-timeline">
                   <div className="ht-timeline-header">
                     <span className="ht-timeline-title">Status Log Timeline</span>
+                    {(entry.timeline || []).length > 0 && (
+                      <span className="ht-tl-staleness">
+                        Last activity: {fmtElapsed(entry.timeline[entry.timeline.length - 1].date, new Date().toISOString())} ago
+                      </span>
+                    )}
                     <button
                       className="btn btn-outline btn-sm"
                       onClick={() => {
@@ -683,8 +712,9 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                     {(entry.timeline || []).length === 0 ? (
                       <div className="ht-timeline-empty">No status logged yet.</div>
                     ) : (
-                      (entry.timeline || []).map((evt) => {
+                      (entry.timeline || []).map((evt, idx, arr) => {
                         const typeInfo = TIMELINE_TYPES.find((t) => t.value === evt.type) || TIMELINE_TYPES[0]
+                        const elapsed = idx > 0 ? fmtElapsed(arr[idx - 1].date, evt.date) : ''
                         return (
                           <div key={evt.id} className="ht-tl-event">
                             <span className="ht-tl-icon">{typeInfo.icon}</span>
@@ -692,7 +722,10 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                             <span className="ht-tl-method">{evt.method}</span>
                             {evt.note && <span className="ht-tl-note">{evt.note}</span>}
                             {evt.ref && <span className="ht-tl-ref">#{evt.ref}</span>}
-                            <span className="ht-tl-date">{fmtTimeline(evt.date)}</span>
+                            <span className="ht-tl-date">
+                              {fmtTimeline(evt.date)}
+                              {elapsed && <span className="ht-tl-elapsed"> +{elapsed}</span>}
+                            </span>
                             <button
                               className="ht-tl-delete"
                               title="Remove event"
