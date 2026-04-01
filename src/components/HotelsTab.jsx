@@ -77,7 +77,7 @@ function computeNights(checkin, checkout) {
   return diff > 0 ? diff : 0
 }
 
-const EMPTY_FORM = { refId: '', checkin: '', checkout: '' }
+const EMPTY_FORM = { refId: '', checkin: '', checkout: '', price_single: '', price_double: '', price_triple: '' }
 
 const TIMELINE_TYPES = [
   { value: 'requested',  label: 'Requested',  icon: <IconSend /> },
@@ -247,8 +247,26 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
     return prevRow ? prevRow.day + 1 : null
   }
 
-  const handleHotelSelect = (refId) => setAddForm((f) => ({ ...f, refId }))
-  const handleEditHotelSelect = (refId) => setEditForm((f) => ({ ...f, refId }))
+  const handleHotelSelect = (refId) => {
+    const hotel = refHotels.find((h) => h.id === refId)
+    setAddForm((f) => ({
+      ...f,
+      refId,
+      price_single: hotel?.price_single ?? '',
+      price_double: hotel?.price_double ?? '',
+      price_triple: hotel?.price_triple ?? '',
+    }))
+  }
+  const handleEditHotelSelect = (refId) => {
+    const hotel = refHotels.find((h) => h.id === refId)
+    setEditForm((f) => ({
+      ...f,
+      refId,
+      price_single: hotel?.price_single ?? '',
+      price_double: hotel?.price_double ?? '',
+      price_triple: hotel?.price_triple ?? '',
+    }))
+  }
 
   const s = Number(booking.single_rooms) || 0
   const d = Number(booking.double_rooms) || 0
@@ -295,15 +313,18 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
     if (nights <= 0) { alert('Check-out must be after check-in.'); return }
     const hotel = refHotels.find((h) => h.id === refId)
     if (!hotel) return
+    const ps = addForm.price_single !== '' ? Number(addForm.price_single) : (hotel.price_single || 0)
+    const pd = addForm.price_double !== '' ? Number(addForm.price_double) : (hotel.price_double || 0)
+    const pt = addForm.price_triple !== '' ? Number(addForm.price_triple) : (hotel.price_triple || 0)
     const entry = {
       id: genId(),
       ref_id: hotel.id,
       name: hotel.name,
       tier: hotel.tier || null,
-      cost_per_night: calcCostPerNight(hotel),
-      price_single: hotel.price_single || 0,
-      price_double: hotel.price_double || 0,
-      price_triple: hotel.price_triple || 0,
+      cost_per_night: s * ps + d * pd + t * pt,
+      price_single: ps,
+      price_double: pd,
+      price_triple: pt,
       checkin,
       checkout,
       nights,
@@ -320,6 +341,9 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
       refId: entry.ref_id || '',
       checkin: entry.checkin || '',
       checkout: entry.checkout || '',
+      price_single: entry.price_single ?? '',
+      price_double: entry.price_double ?? '',
+      price_triple: entry.price_triple ?? '',
     })
     setEditingId(entry.id)
     setOpenMenuId(null)
@@ -329,16 +353,19 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
     const nights = computeNights(editForm.checkin, editForm.checkout)
     if (nights <= 0) { alert('Check-out must be after check-in.'); return }
     const hotel = refHotels.find((h) => h.id === editForm.refId)
+    const ps = editForm.price_single !== '' ? Number(editForm.price_single) : (entry.price_single || 0)
+    const pd = editForm.price_double !== '' ? Number(editForm.price_double) : (entry.price_double || 0)
+    const pt = editForm.price_triple !== '' ? Number(editForm.price_triple) : (entry.price_triple || 0)
     const updated = hotels.map((h) =>
       h.id !== entry.id ? h : {
         ...h,
         ref_id: editForm.refId,
         name: hotel?.name || h.name,
         tier: hotel?.tier || h.tier,
-        cost_per_night: hotel ? calcCostPerNight(hotel) : h.cost_per_night,
-        price_single: hotel?.price_single || h.price_single || 0,
-        price_double: hotel?.price_double || h.price_double || 0,
-        price_triple: hotel?.price_triple || h.price_triple || 0,
+        cost_per_night: s * ps + d * pd + t * pt,
+        price_single: ps,
+        price_double: pd,
+        price_triple: pt,
         checkin: editForm.checkin,
         checkout: editForm.checkout,
         nights,
@@ -460,6 +487,26 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
             </select>
           </div>
 
+          {addForm.refId && (
+            <div className="ht-price-fields">
+              <div className="tab-add-field">
+                <label>Single €</label>
+                <input className="tr-edit-input" type="number" min="0" placeholder="0"
+                  value={addForm.price_single} onChange={(e) => setAddForm((f) => ({ ...f, price_single: e.target.value }))} />
+              </div>
+              <div className="tab-add-field">
+                <label>Double €</label>
+                <input className="tr-edit-input" type="number" min="0" placeholder="0"
+                  value={addForm.price_double} onChange={(e) => setAddForm((f) => ({ ...f, price_double: e.target.value }))} />
+              </div>
+              <div className="tab-add-field">
+                <label>Triple €</label>
+                <input className="tr-edit-input" type="number" min="0" placeholder="0"
+                  value={addForm.price_triple} onChange={(e) => setAddForm((f) => ({ ...f, price_triple: e.target.value }))} />
+              </div>
+            </div>
+          )}
+
           {addForm.checkin && addForm.checkout && (
             <div className="tab-add-field">
               <label>Nights</label>
@@ -555,6 +602,14 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                 <div className="ht-cost">
                   <span>{fmtCost(entry.cost_per_night)}/night</span>
                   <span className="ht-cost-total"> · {fmtCost(entry.cost_per_night * entry.nights)} total</span>
+                  {(() => {
+                    const ref = refHotels.find((h) => h.id === entry.ref_id)
+                    if (!ref) return null
+                    const isCustom = (entry.price_single || 0) !== (ref.price_single || 0) ||
+                      (entry.price_double || 0) !== (ref.price_double || 0) ||
+                      (entry.price_triple || 0) !== (ref.price_triple || 0)
+                    return isCustom ? <span className="ht-custom-badge">Custom</span> : null
+                  })()}
                 </div>
 
                 {/* Activity badge */}
@@ -640,6 +695,23 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                         itinerary={itinerary}
                         minDate={editForm.checkin}
                       />
+                    </div>
+                  </div>
+                  <div className="ht-price-fields">
+                    <div className="tab-add-field">
+                      <label className="tr-edit-label">Single €</label>
+                      <input className="tr-edit-input" type="number" min="0" placeholder="0"
+                        value={editForm.price_single} onChange={(e) => setEditForm((f) => ({ ...f, price_single: e.target.value }))} />
+                    </div>
+                    <div className="tab-add-field">
+                      <label className="tr-edit-label">Double €</label>
+                      <input className="tr-edit-input" type="number" min="0" placeholder="0"
+                        value={editForm.price_double} onChange={(e) => setEditForm((f) => ({ ...f, price_double: e.target.value }))} />
+                    </div>
+                    <div className="tab-add-field">
+                      <label className="tr-edit-label">Triple €</label>
+                      <input className="tr-edit-input" type="number" min="0" placeholder="0"
+                        value={editForm.price_triple} onChange={(e) => setEditForm((f) => ({ ...f, price_triple: e.target.value }))} />
                     </div>
                   </div>
                   <div className="tr-edit-actions">
