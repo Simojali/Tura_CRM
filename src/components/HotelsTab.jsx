@@ -266,8 +266,17 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
   const countByStatus = (status) =>
     hotels.filter((h) => getStatus(h) === status).length
 
-  const renderHotelOptions = () =>
-    Object.entries(hotelsByCity).map(([city, cityHotels]) => (
+  const getCityForDate = (date) => {
+    if (!date || !itinerary.length) return ''
+    const row = itinerary.find((r) => r.date === date)
+    return row ? row.city : ''
+  }
+
+  const renderHotelOptions = (filterCity) => {
+    const entries = filterCity
+      ? Object.entries(hotelsByCity).filter(([city]) => city === filterCity)
+      : Object.entries(hotelsByCity)
+    return entries.map(([city, cityHotels]) => (
       <optgroup key={city} label={city}>
         {cityHotels.map((h) => (
           <option key={h.id} value={h.id}>
@@ -276,6 +285,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
         ))}
       </optgroup>
     ))
+  }
 
   // ── Add ──────────────────────────────────────────────────────────────
   const addHotel = () => {
@@ -423,7 +433,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
             <label>Check-in</label>
             <DayPicker
               value={addForm.checkin}
-              onChange={(d) => setAddForm((f) => ({ ...f, checkin: d }))}
+              onChange={(d) => setAddForm((f) => ({ ...f, checkin: d, refId: '' }))}
               itinerary={itinerary}
             />
           </div>
@@ -446,7 +456,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
               onChange={(e) => handleHotelSelect(e.target.value)}
             >
               <option value="">— Select hotel —</option>
-              {renderHotelOptions()}
+              {renderHotelOptions(getCityForDate(addForm.checkin))}
             </select>
           </div>
 
@@ -611,7 +621,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                         onChange={(e) => handleEditHotelSelect(e.target.value)}
                       >
                         <option value="">— Keep current —</option>
-                        {renderHotelOptions()}
+                        {renderHotelOptions(getCityForDate(editForm.checkin))}
                       </select>
                     </div>
                     <div>
