@@ -187,7 +187,10 @@ export default function Dashboard() {
   useEffect(() => { fetchBookings(); loadProviders().then(setProviders) }, [fetchBookings])
 
   const handleCreateBooking = async (formData) => {
-    const { count } = await supabase.from('bookings').select('*', { count: 'exact', head: true })
+    const { count } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .eq('provider', formData.provider)
     const booking_reference = generateBookingReference(formData.provider, (count || 0) + 1)
     const payload = {
       ...formData, booking_reference,
@@ -281,7 +284,7 @@ export default function Dashboard() {
             const costPerPerson = costMap[b.id] || 0
 
             return (
-              <div key={b.id} className="bk-card" style={{ zIndex: (noteOpen === b.id || menuOpen === b.id) ? 10 : 'auto' }} onClick={() => navigate(`/bookings/${b.id}`)}>
+              <div key={b.id} className="bk-card" style={{ zIndex: (noteOpen === b.id || menuOpen === b.id) ? 10 : 'auto' }} onClick={() => navigate(`/bookings/${b.booking_reference}`)}>
                 <div className="bk-card-inner">
 
                   {/* Client */}
@@ -416,7 +419,7 @@ export default function Dashboard() {
                         <div className="bk-dots-menu" onMouseDown={e => e.stopPropagation()}>
                           <button
                             className="bk-dots-menu-item"
-                            onClick={e => { e.stopPropagation(); navigate(`/bookings/${b.id}?edit=true`) }}
+                            onClick={e => { e.stopPropagation(); navigate(`/bookings/${b.booking_reference}?edit=true`) }}
                           >
                             Edit booking
                           </button>

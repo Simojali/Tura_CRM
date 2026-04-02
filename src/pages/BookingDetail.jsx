@@ -95,6 +95,7 @@ export default function BookingDetail() {
   const itineraryRef = useRef(itinerary)
   const contractsRef = useRef(contracts)
   const hotelsRef    = useRef(hotels)
+  const uuidRef      = useRef(null) // actual DB UUID, set after booking is fetched
   useEffect(() => { itineraryRef.current = itinerary }, [itinerary])
   useEffect(() => { contractsRef.current = contracts }, [contracts])
   useEffect(() => { hotelsRef.current    = hotels },    [hotels])
@@ -151,11 +152,12 @@ export default function BookingDetail() {
     setLoading(true)
 
     if (!isSupabaseConfigured) {
-      const found = MOCK_BOOKINGS.find((b) => b.id === id)
+      const found = MOCK_BOOKINGS.find((b) => b.booking_reference === id || b.id === id)
       const b = found ? normalizeBooking(found) : null
       setBooking(b)
       if (b) {
-        const saved = await loadItinerary(id)
+        uuidRef.current = b.id
+        const saved = await loadItinerary(b.id)
         setItinerary(reconcileItinerary(saved?.rows ?? null, b))
         setContracts(saved?.contracts ?? [])
         setHotels(saved?.hotels ?? [])
@@ -167,16 +169,17 @@ export default function BookingDetail() {
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
-      .eq('id', id)
+      .eq('booking_reference', id)
       .single()
 
     if (error) {
       console.error('Error fetching booking:', error)
       setToast({ message: 'Error loading booking', type: 'error' })
     } else {
+      uuidRef.current = data.id
       const b = normalizeBooking(data)
       setBooking(b)
-      const saved = await loadItinerary(id)
+      const saved = await loadItinerary(data.id)
       setItinerary(saved?.rows || initItinerary(b))
       setContracts(saved?.contracts || [])
       setHotels(saved?.hotels || [])
@@ -196,27 +199,27 @@ export default function BookingDetail() {
   const handleItinerarySave = async (rows) => {
     setItinerary(rows)
     itineraryRef.current = rows
-    await saveItinerary(id, rows, contractsRef.current, hotelsRef.current)
+    await saveItinerary(uuidRef.current, rows, contractsRef.current, hotelsRef.current)
     setToast({ message: 'Itinerary saved', type: 'success' })
   }
 
   const handleContractsSave = async (newContracts) => {
     setContracts(newContracts)
     contractsRef.current = newContracts
-    await saveItinerary(id, itineraryRef.current, newContracts, hotelsRef.current)
+    await saveItinerary(uuidRef.current, itineraryRef.current, newContracts, hotelsRef.current)
   }
 
   const handleHotelsSave = async (newHotels) => {
     setHotels(newHotels)
     hotelsRef.current = newHotels
-    await saveItinerary(id, itineraryRef.current, contractsRef.current, newHotels)
+    await saveItinerary(uuidRef.current, itineraryRef.current, contractsRef.current, newHotels)
   }
 
   const handleSave = async (formData) => {
     if (!isSupabaseConfigured) {
       const b = normalizeBooking({ ...booking, ...formData })
       setBooking(b)
-      const saved = await loadItinerary(id)
+      const saved = await loadItinerary(uuidRef.current)
       setItinerary(reconcileItinerary(saved?.rows ?? null, b))
       setShowEditModal(false)
       setToast({ message: 'Booking updated successfully', type: 'success' })
@@ -254,7 +257,7 @@ export default function BookingDetail() {
     const { error } = await supabase
       .from('bookings')
       .update(payload)
-      .eq('id', id)
+      .eq('id', uuidRef.current)
 
     if (error) {
       console.error('Error updating booking:', error)
@@ -273,7 +276,7 @@ export default function BookingDetail() {
       setToast({ message: 'Booking updated', type: 'success' })
       return
     }
-    const { error } = await supabase.from('bookings').update(fields).eq('id', id)
+    const { error } = await supabase.from('bookings').update(fields).eq('id', uuidRef.current)
     if (error) {
       console.error('Error updating booking:', error)
       setToast({ message: 'Error saving: ' + error.message, type: 'error' })

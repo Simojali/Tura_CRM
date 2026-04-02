@@ -324,10 +324,10 @@ export default function HotelProfile() {
                 <div
                   key={`${booking.id}-${idx}`}
                   className={`hp-booking-card hp-bc-status-${getHotelStatus(hotelEntry)}`}
-                  onClick={() => navigate(`/bookings/${booking.id}`)}
+                  onClick={() => navigate(`/bookings/${booking.booking_reference}`)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && navigate(`/bookings/${booking.id}`)}
+                  onKeyDown={(e) => e.key === 'Enter' && navigate(`/bookings/${booking.booking_reference}`)}
                 >
                   {/* Hotel reservation status (derived from timeline) */}
                   <div className="hp-bc-col hp-bc-col-status">

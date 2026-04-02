@@ -2,6 +2,16 @@ import { CITIES as FALLBACK_CITIES } from '../lib/referenceData'
 import { computeDayCost } from '../lib/itineraryUtils'
 import { fmtDate, fmtDateLong, fmtCost, fmtRooms, nextDay, statusLabel } from '../lib/formatters'
 
+const STATUS_EVENTS = new Set(['requested', 'confirmed', 'declined', 'modified', 'cancelled'])
+function getHotelStatus(entry) {
+  const timeline = entry.timeline || []
+  if (timeline.length === 0) return 'draft'
+  for (let i = timeline.length - 1; i >= 0; i--) {
+    if (STATUS_EVENTS.has(timeline[i].type)) return timeline[i].type
+  }
+  return 'draft'
+}
+
 export default function TripOverview({ booking, itinerary, contracts = [], hotels = [], cities: citiesProp, onSave }) {
   const CITIES = citiesProp || FALLBACK_CITIES
 
@@ -98,7 +108,7 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
             const dayCost = computeDayCost(row, contracts, i, hotels)
             const hotelEntry = hotels.find((h) => row.date && row.date >= h.checkin && row.date < h.checkout)
             const displayHotel = hotelEntry
-              ? { hotel_id: hotelEntry.ref_id, hotel_name: hotelEntry.name, hotel_tier: hotelEntry.tier, hotel_cost: hotelEntry.cost_per_night, hotel_status: hotelEntry.status, hotel_confirmation_ref: hotelEntry.confirmation_ref, hotel_checkin: hotelEntry.checkin, hotel_checkout: hotelEntry.checkout }
+              ? { hotel_id: hotelEntry.ref_id, hotel_name: hotelEntry.name, hotel_tier: hotelEntry.tier, hotel_cost: hotelEntry.cost_per_night, hotel_status: getHotelStatus(hotelEntry), hotel_confirmation_ref: hotelEntry.confirmation_ref, hotel_checkin: hotelEntry.checkin, hotel_checkout: hotelEntry.checkout }
               : row
             const checkin = displayHotel.hotel_checkin || row.date || ''
             const checkout = displayHotel.hotel_checkout || getAutoCheckout(i)

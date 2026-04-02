@@ -89,16 +89,29 @@ export const CLIENT_TYPES = [
 ]
 
 const MONTH_ABBR = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
 ]
+
+/**
+ * Derive a 2-letter abbreviation from a provider name.
+ * - Two+ words: first letter of the first two words → "Mapi Expedicion" → "ME"
+ * - One word: first two letters → "Marco" → "MA"
+ */
+export function providerAbbr(provider) {
+  const name = (provider || 'XX').trim()
+  const words = name.split(/\s+/).filter(Boolean)
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+}
 
 export function generateBookingReference(provider, sequentialNumber) {
   const now = new Date()
   const yy = String(now.getFullYear()).slice(-2)
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
   const monthAbbr = MONTH_ABBR[now.getMonth()]
-  const provAbbr = (provider || 'XX').slice(0, 2).toUpperCase()
+  const abbr = providerAbbr(provider)
   const seq = String(sequentialNumber).padStart(3, '0')
-  return `${yy}${mm}${monthAbbr}${provAbbr}${seq}`
+  return `${yy}${monthAbbr}${abbr}${seq}`
 }
