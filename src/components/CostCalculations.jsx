@@ -68,9 +68,9 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
       <div className="cost-panel-header">
         <h3 className="cost-panel-title">Cost Analysis</h3>
         {isQuotation ? (
-          <span className="cost-mode-badge cost-mode-quotation">📋 Quotation — adjust markup and confirm</span>
+          <span className="cost-mode-badge cost-mode-quotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Quotation — adjust markup and confirm</span>
         ) : (
-          <span className="cost-mode-badge cost-mode-locked">✅ Prices Locked</span>
+          <span className="cost-mode-badge cost-mode-locked"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Prices Locked</span>
         )}
         {booking.client_type && (
           <span className="cost-client-type">{clientTypeLabel} — default markup {getDefaultMarkup(booking.client_type)}%</span>
@@ -206,14 +206,14 @@ export default function CostCalculations({ booking, itinerary, contracts = [], h
               onClick={handleConfirmPrices}
               disabled={totals.grandTotal <= 0}
             >
-              ✅ Confirm & Lock Prices
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirm & Lock Prices
             </button>
           ) : (
             <button
               className="btn btn-outline cost-revert-btn"
               onClick={handleRevertToQuotation}
             >
-              ↩ Revert to Quotation
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg> Revert to Quotation
             </button>
           )}
         </div>

@@ -161,7 +161,9 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
                       <div key={ti} className="itin-timeline-item">
                         <span className="itin-time-badge">{item.time}</span>
                         <span className="to-kind-icon">
-                          {item.kind === 'activity' ? '⚡' : '🚗'}
+                          {item.kind === 'activity'
+                            ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>}
                         </span>
                         <div className="itin-item-info">
                           <span className="itin-item-name">{item.name}</span>
@@ -174,7 +176,7 @@ export default function TripOverview({ booking, itinerary, contracts = [], hotel
                             <span className="itin-item-meta">{item.paxLabel}</span>
                           )}
                           {item.driverName && (
-                            <span className="itin-item-meta">👤 {item.driverName}</span>
+                            <span className="itin-item-meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> {item.driverName}</span>
                           )}
                         </div>
                         {(item.kind === 'transfer' || item.kind === 'transport') && (

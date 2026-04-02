@@ -3,6 +3,15 @@ import { loadReferenceData } from '../lib/referenceData'
 import { fmtDate, fmtCost } from '../lib/formatters'
 import { TRANSFER_STATUS_LABELS as STATUS_LABELS } from '../lib/constants'
 
+const sz = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
+const IconUser      = () => <svg {...sz}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+const IconCheck     = () => <svg {...sz}><polyline points="20 6 9 17 4 12"/></svg>
+const IconCheckDone = () => <svg {...sz}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+const IconEdit      = () => <svg {...sz}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+const IconX         = () => <svg {...sz}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+const IconRestore   = () => <svg {...sz}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.54"/></svg>
+const IconTrash     = () => <svg {...sz}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+
 const STATUSES = [
   { value: 'all',       label: 'All' },
   { value: 'requested', label: 'Requested' },
@@ -627,7 +636,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                     </div>
                     <div className="tr-driver">
                       {item.driver_name
-                        ? <><span className="tr-driver-name">👤 {item.driver_name}</span>{item.driver_phone && <span className="tr-driver-phone">{item.driver_phone}</span>}</>
+                        ? <><span className="tr-driver-name"><IconUser /> {item.driver_name}</span>{item.driver_phone && <span className="tr-driver-phone">{item.driver_phone}</span>}</>
                         : <span className="tr-driver-empty">—</span>}
                     </div>
                     <div className="tr-status">
@@ -640,12 +649,12 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                       <button className="tr-menu-btn" onClick={(e) => { e.stopPropagation(); setOpenFlatMenu(openFlatMenu === flatKey ? null : flatKey); setOpenContractMenu(null) }}>⋮</button>
                       {openFlatMenu === flatKey && (
                         <div className="tr-menu" onClick={(e) => e.stopPropagation()}>
-                          {item.status !== 'confirmed' && <button className="tr-menu-item" onClick={() => markFlatStatus(item, 'confirmed')}>✅ Mark Confirmed</button>}
-                          {item.status !== 'done'      && <button className="tr-menu-item" onClick={() => markFlatStatus(item, 'done')}>✔ Mark Done</button>}
-                          <button className="tr-menu-item" onClick={() => startEditFlat(item)}>✏️ Edit</button>
-                          {item.status !== 'cancelled' && <button className="tr-menu-item danger" onClick={() => markFlatStatus(item, 'cancelled')}>✕ Cancel</button>}
-                          {item.status === 'cancelled' && <button className="tr-menu-item" onClick={() => markFlatStatus(item, 'requested')}>↺ Restore</button>}
-                          <button className="tr-menu-item danger" onClick={() => deleteFlat(item.dayIndex, item.transferIndex, item.name)}>🗑️ Delete</button>
+                          {item.status !== 'confirmed' && <button className="tr-menu-item" onClick={() => markFlatStatus(item, 'confirmed')}><IconCheck /> Mark Confirmed</button>}
+                          {item.status !== 'done'      && <button className="tr-menu-item" onClick={() => markFlatStatus(item, 'done')}><IconCheckDone /> Mark Done</button>}
+                          <button className="tr-menu-item" onClick={() => startEditFlat(item)}><IconEdit /> Edit</button>
+                          {item.status !== 'cancelled' && <button className="tr-menu-item danger" onClick={() => markFlatStatus(item, 'cancelled')}><IconX /> Cancel</button>}
+                          {item.status === 'cancelled' && <button className="tr-menu-item" onClick={() => markFlatStatus(item, 'requested')}><IconRestore /> Restore</button>}
+                          <button className="tr-menu-item danger" onClick={() => deleteFlat(item.dayIndex, item.transferIndex, item.name)}><IconTrash /> Delete</button>
                         </div>
                       )}
                     </div>
@@ -685,7 +694,12 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                       </div>
                     </div>
                   )}
-                  {editingFlatKey !== flatKey && item.notes && <div className="tr-notes-row">📝 {item.notes}</div>}
+                  {editingFlatKey !== flatKey && item.notes?.trim() && (
+                    <div className="tr-notes-row">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      {item.notes}
+                    </div>
+                  )}
                 </div>
               )
             }
@@ -715,7 +729,7 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                   </div>
                   {c.driver_name && (
                     <div className="tr-driver" style={{ flex: '0 0 auto' }}>
-                      <span className="tr-driver-name">👤 {c.driver_name}</span>
+                      <span className="tr-driver-name"><IconUser /> {c.driver_name}</span>
                       {c.driver_phone && <span className="tr-driver-phone">{c.driver_phone}</span>}
                     </div>
                   )}
@@ -726,12 +740,12 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                     <button className="tr-menu-btn" onClick={(e) => { e.stopPropagation(); setOpenContractMenu(openContractMenu === c.id ? null : c.id); setOpenFlatMenu(null) }}>⋮</button>
                     {openContractMenu === c.id && (
                       <div className="tr-menu" onClick={(e) => e.stopPropagation()}>
-                        {c.status !== 'confirmed' && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'confirmed')}>✅ Mark Confirmed</button>}
-                        {c.status !== 'done'      && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'done')}>✔ Mark Done</button>}
-                        <button className="tr-menu-item" onClick={() => startEditContract(c)}>✏️ Edit</button>
-                        {c.status !== 'cancelled' && <button className="tr-menu-item danger" onClick={() => markContractStatus(c.id, 'cancelled')}>✕ Cancel</button>}
-                        {c.status === 'cancelled' && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'requested')}>↺ Restore</button>}
-                        <button className="tr-menu-item danger" onClick={() => deleteContract(c.id, c.name)}>🗑️ Delete</button>
+                        {c.status !== 'confirmed' && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'confirmed')}><IconCheck /> Mark Confirmed</button>}
+                        {c.status !== 'done'      && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'done')}><IconCheckDone /> Mark Done</button>}
+                        <button className="tr-menu-item" onClick={() => startEditContract(c)}><IconEdit /> Edit</button>
+                        {c.status !== 'cancelled' && <button className="tr-menu-item danger" onClick={() => markContractStatus(c.id, 'cancelled')}><IconX /> Cancel</button>}
+                        {c.status === 'cancelled' && <button className="tr-menu-item" onClick={() => markContractStatus(c.id, 'requested')}><IconRestore /> Restore</button>}
+                        <button className="tr-menu-item danger" onClick={() => deleteContract(c.id, c.name)}><IconTrash /> Delete</button>
                       </div>
                     )}
                   </div>
@@ -775,7 +789,12 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                   </div>
                 )}
 
-                {c.notes && !isEditingC && <div className="tr-notes-row">📝 {c.notes}</div>}
+                {c.notes?.trim() && !isEditingC && (
+                  <div className="tr-notes-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    {c.notes}
+                  </div>
+                )}
 
                 {/* Expanded movements */}
                 {isExpandedC && (
@@ -825,8 +844,8 @@ export default function TransfersTab({ booking, itinerary, contracts = [], onSav
                                 {mov.is_departure && <span className="itin-type-badge departure">Departure</span>}
                               </div>
                               <div className="mov-actions">
-                                <button className="mov-btn" title="Edit" onClick={() => startEditMovement(c.id, mov)}>✏️</button>
-                                <button className="mov-btn danger" title="Delete" onClick={() => deleteMovement(c.id, mov.id)}>🗑️</button>
+                                <button className="mov-btn" title="Edit" onClick={() => startEditMovement(c.id, mov)}><IconEdit /></button>
+                                <button className="mov-btn danger" title="Delete" onClick={() => deleteMovement(c.id, mov.id)}><IconTrash /></button>
                               </div>
                             </>
                           )}

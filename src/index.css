@@ -1832,7 +1832,7 @@ tbody tr:hover {
 }
 
 .status-draft     { background: #e5e7eb; color: #9ca3af; }
-.status-requested { background: #f3f4f6; color: #6b7280; }
+.status-requested { background: #fef9c3; color: #854d0e; }
 .status-confirmed { background: #d4ede1; color: #0f3d25; }
 .status-done      { background: #0f3d25; color: #ffffff; }
 .status-declined  { background: #fef3c7; color: #92400e; }
@@ -2263,6 +2263,9 @@ tbody tr:hover {
   color: var(--color-text-light);
   background: #fbfdfb;
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-style: italic;
 }
 
@@ -2538,7 +2541,7 @@ tbody tr:hover {
 .hotels-list-header,
 .hotels-row {
   display: grid;
-  grid-template-columns: 20px 1.2fr 190px 45px 90px 75px 70px 1fr 75px 50px;
+  grid-template-columns: 20px 1.2fr 190px 45px 90px 75px 90px 90px 75px 50px;
   align-items: center;
   gap: 0.75rem;
   padding: 0.65rem 1.25rem;
@@ -2727,17 +2730,18 @@ tbody tr:hover {
 
 .ht-rooms { font-size: 0.8rem; color: var(--color-text-light); }
 .ht-nights { font-size: 0.8rem; color: var(--color-text-light); }
-.ht-cost { font-size: 0.875rem; font-weight: 500; display: flex; flex-direction: column; gap: 1px; }
+.ht-cost { font-size: 0.875rem; font-weight: 500; display: flex; flex-direction: column; gap: 1px; align-items: center; }
 .ht-cost-total { font-size: 0.75rem; color: var(--color-text-light); font-weight: 400; }
 .ht-custom-badge {
   display: inline-block;
+  align-self: center;
   font-size: 0.65rem;
   font-weight: 600;
   color: #b45309;
   background: rgba(180, 83, 9, 0.1);
-  padding: 0.05rem 0.4rem;
+  padding: 0.1rem 0.4rem;
   border-radius: 8px;
-  margin-left: 0.25rem;
+  margin-top: 0.15rem;
 }
 
 .ht-price-fields {
