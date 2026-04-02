@@ -753,6 +753,139 @@ tbody tr:hover {
   font-style: italic;
 }
 
+/* ── Hotel Profile: Booking History ── */
+.hp-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-light);
+  margin: 1.75rem 0 0.75rem;
+}
+.hp-stats-strip {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.hp-stat {
+  flex: 1;
+  text-align: center;
+}
+.hp-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.hp-stat-label {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  margin-top: 0.1rem;
+}
+.hp-stat-divider {
+  width: 1px;
+  height: 2.5rem;
+  background: var(--color-border);
+  margin: 0 1rem;
+}
+.hp-history-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-light);
+  font-size: 0.875rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.hp-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-bottom: 2rem;
+}
+.hp-booking-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  display: grid;
+  grid-template-columns: 100px 1fr 160px 50px 220px 160px 100px;
+  align-items: center;
+  gap: 0.75rem;
+}
+.hp-booking-card:hover {
+  border-color: var(--color-primary);
+  border-left-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(26, 102, 64, 0.08);
+  transform: translateY(-1px);
+}
+/* Status-colored left border (hotel reservation status) */
+.hp-bc-status-confirmed  { border-left-color: #16a34a; }
+.hp-bc-status-requested  { border-left-color: #ca8a04; }
+.hp-bc-status-modified   { border-left-color: #2563eb; }
+.hp-bc-status-cancelled  { border-left-color: #dc2626; }
+.hp-bc-status-declined   { border-left-color: #dc2626; }
+.hp-bc-status-draft      { border-left-color: var(--color-border); }
+
+.hp-bc-col { display: flex; flex-direction: column; justify-content: center; }
+.hp-bc-col-status { align-items: flex-start; }
+.hp-bc-col-guests { align-items: center; }
+.hp-bc-col-rooms { flex-direction: row; align-items: center; gap: 0.5rem; flex-wrap: nowrap; }
+.hp-bc-col-rate { flex-direction: row; align-items: center; gap: 0.3rem; flex-wrap: nowrap; }
+.hp-bc-col-total { align-items: flex-end; }
+
+.hp-bc-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+.hp-bc-ref {
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: var(--color-text-light);
+  margin-top: 0.1rem;
+}
+.hp-bc-dates-val {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.hp-bc-nights-val {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  margin-top: 0.1rem;
+}
+.hp-bc-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--color-text-light);
+}
+.hp-bc-info-item svg { flex-shrink: 0; opacity: 0.7; }
+.hp-bc-room-count {
+  font-size: 0.82rem;
+  color: var(--color-text-light);
+  font-weight: 500;
+}
+.hp-bc-cost-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.hp-bc-total-val {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
 .hp-prices-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

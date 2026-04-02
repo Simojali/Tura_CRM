@@ -608,7 +608,7 @@ export default function HotelsTab({ booking, itinerary = [], hotels = [], onSave
                     const isCustom = (entry.price_single || 0) !== (ref.price_single || 0) ||
                       (entry.price_double || 0) !== (ref.price_double || 0) ||
                       (entry.price_triple || 0) !== (ref.price_triple || 0)
-                    return isCustom ? <span className="ht-custom-badge">Custom</span> : null
+                    return isCustom ? <span className="ht-custom-badge">Custom price</span> : null
                   })()}
                 </div>
 
