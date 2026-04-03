@@ -103,9 +103,9 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
       notes: form.notes || null,
       group_price: isTransport ? (form.group_price !== '' ? Number(form.group_price) : null) : null,
       capacity: (form.category === 'transfer' || isTransport) ? (form.capacity !== '' ? Number(form.capacity) : null) : null,
-      contact_person: isHotel ? (form.contact_person || null) : null,
-      contact_email: isHotel ? (form.contact_email || null) : null,
-      contact_phone: isHotel ? (form.contact_phone || null) : null,
+      contact_person: hasContact ? (form.contact_person || null) : null,
+      contact_email: hasContact ? (form.contact_email || null) : null,
+      contact_phone: hasContact ? (form.contact_phone || null) : null,
       payment_terms: isHotel ? (form.payment_terms || null) : null,
       default_deposit_pct: isHotel ? (form.default_deposit_pct !== '' ? Number(form.default_deposit_pct) : null) : null,
       cancellation_policy: isHotel ? (form.cancellation_policy || null) : null,
@@ -117,6 +117,7 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
   }
 
   const isHotel = form.category === 'hotel'
+  const hasContact = form.category === 'hotel' || form.category === 'transfer' || form.category === 'transport' || form.category === 'activity'
   const subcategories = REF_SUBCATEGORIES[form.category] || []
   const priceUnits = PRICE_UNIT_OPTIONS[form.category] || []
 
@@ -282,8 +283,8 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
                 </>
               )}
 
-              {/* Hotel-only: Supplier & Payment sections */}
-              {isHotel && (
+              {/* Supplier / Contact — hotels, transfers, transports */}
+              {hasContact && (
                 <>
                   <div className="form-section-label">Supplier / Contact</div>
 
@@ -319,6 +320,12 @@ export default function ReferenceItemModal({ item, cities: citiesProp, onClose, 
                     />
                   </div>
 
+                </>
+              )}
+
+              {/* Hotel-only: Payment Terms */}
+              {isHotel && (
+                <>
                   <div className="form-section-label">Payment Terms</div>
 
                   <div className="form-group">

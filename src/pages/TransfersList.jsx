@@ -8,6 +8,27 @@ import Toast from '../components/Toast'
 const slugify = (name) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
+const fmtPrice = (v) =>
+  v != null ? `€${Number(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : null
+
+function PinIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  )
+}
+
+function PersonIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+  )
+}
+
 export default function TransfersList() {
   const navigate = useNavigate()
   const [allItems, setAllItems] = useState([])
@@ -82,23 +103,11 @@ export default function TransfersList() {
     setDeleteConfirm(null)
   }
 
-  const columns = [
-    { key: 'name',        label: 'Route',    render: (item) => <strong>{item.name}</strong> },
-    { key: 'subcategory', label: 'Type' },
-    { key: 'city',        label: 'City' },
-    { key: 'capacity',    label: 'Capacity', render: (item) => item.capacity ? `${item.capacity} pax` : '—' },
-    { key: 'price',       label: 'Price (€)', render: (item) => item.price != null ? `€${Number(item.price).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '—', className: 'ref-price' },
-    { key: 'price_unit',  label: 'Unit' },
-    { key: 'notes',       label: 'Notes',    className: 'ref-notes' },
-  ]
-
   return (
     <>
       <div className="page-header">
         <h2>Transfers</h2>
-        <button className="btn btn-success" onClick={() => setModalItem({})}>
-          + Add Transfer
-        </button>
+        <button className="btn btn-success" onClick={() => setModalItem({})}>+ Add Transfer</button>
       </div>
 
       <div className="container">
@@ -120,50 +129,70 @@ export default function TransfersList() {
           </select>
         </div>
 
-        <div className="table-wrapper">
-          <table className="ref-table">
-            <thead>
-              <tr>
-                {columns.map((c) => <th key={c.key}>{c.label}</th>)}
-                <th style={{ width: '70px' }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loadingItems ? (
-                [1,2,3,4,5].map((n) => (
-                  <tr key={n} style={{ pointerEvents: 'none' }}>
-                    {columns.map((c, i) => (
-                      <td key={i}><div className="skel skel-td" style={{ width: 60 + Math.random() * 40 }} /></td>
-                    ))}
-                    <td></td>
-                  </tr>
-                ))
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length + 1} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>
-                    No transfers match your filters.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((item) => (
-                  <tr key={item.id} onClick={() => navigate(`/transfers/${slugify(item.name)}`)}>
-                    {columns.map((c) => (
-                      <td key={c.key} className={c.className || ''}>
-                        {c.render ? c.render(item) : (item[c.key] || '—')}
-                      </td>
-                    ))}
-                    <td>
-                      <button
-                        className="btn-icon btn-icon-danger"
-                        title="Delete"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(item) }}
-                      >&times;</button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        {/* Cards */}
+        <div className="hl-list">
+          {loadingItems ? (
+            [1,2,3,4,5].map((n) => (
+              <div key={n} className="hl-card hl-card-skel">
+                <div className="hl-card-main">
+                  <div className="skel" style={{ height: 18, width: 200, borderRadius: 4, marginBottom: 6 }} />
+                  <div className="skel" style={{ height: 13, width: 100, borderRadius: 4 }} />
+                </div>
+                <div className="hl-card-city"><div className="skel" style={{ height: 14, width: 80, borderRadius: 4 }} /></div>
+                <div className="hl-card-prices"><div className="skel" style={{ height: 14, width: 100, borderRadius: 4 }} /></div>
+                <div className="hl-card-contact"><div className="skel" style={{ height: 14, width: 90, borderRadius: 4 }} /></div>
+                <div className="hl-card-arrow" />
+              </div>
+            ))
+          ) : filtered.length === 0 ? (
+            <div className="hl-empty">No transfers match your filters.</div>
+          ) : (
+            filtered.map((item) => (
+              <div
+                key={item.id}
+                className="hl-card"
+                onClick={() => navigate(`/transfers/${slugify(item.name)}`)}
+              >
+                <div className="hl-card-main">
+                  <div className="hl-card-name">{item.name}</div>
+                  <div className="hl-card-badges">
+                    {item.subcategory && <span className="bc-meta-chip">{item.subcategory}</span>}
+                  </div>
+                </div>
+
+                <div className="hl-card-city">
+                  {item.city
+                    ? <><PinIcon />{item.city}</>
+                    : <span className="hl-card-empty">—</span>}
+                </div>
+
+                <div className="hl-card-prices">
+                  <span>{fmtPrice(item.price) || '—'}</span>
+                  {item.capacity != null && (
+                    <span style={{ marginLeft: '0.6rem', color: 'var(--color-text-light)', fontSize: '0.8rem' }}>· {item.capacity} pax</span>
+                  )}
+                  {item.price_unit && (
+                    <div className="hl-card-price-unit">{item.price_unit}</div>
+                  )}
+                </div>
+
+                <div className="hl-card-contact">
+                  {item.contact_person
+                    ? <><PersonIcon />{item.contact_person}</>
+                    : <span className="hl-card-empty">No contact</span>}
+                </div>
+
+                <div className="hl-card-actions">
+                  <button
+                    className="btn-icon btn-icon-danger"
+                    title="Delete"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(item) }}
+                  >&times;</button>
+                  <span className="hl-card-arrow">›</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         <div className="ref-footer">

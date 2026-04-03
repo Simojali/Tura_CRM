@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { loadReferenceData, saveReferenceData } from '../lib/referenceData'
+import { loadReferenceData, saveReferenceData, loadCities } from '../lib/referenceData'
 import ReferenceItemModal from '../components/ReferenceItemModal'
 import Toast from '../components/Toast'
 
@@ -22,6 +22,7 @@ export default function ActivityProfile() {
   const [notFound, setNotFound] = useState(false)
   const [editModal, setEditModal] = useState(false)
   const [toast, setToast] = useState(null)
+  const [cities, setCities] = useState([])
 
   useEffect(() => {
     loadReferenceData().then((data) => {
@@ -34,6 +35,7 @@ export default function ActivityProfile() {
       }
       setLoading(false)
     })
+    loadCities().then((data) => setCities(data))
   }, [id])
 
   const handleSave = async (data) => {
@@ -169,7 +171,7 @@ export default function ActivityProfile() {
       {editModal && (
         <ReferenceItemModal
           item={item}
-          cities={[]}
+          cities={cities.map((c) => c.name)}
           onClose={() => setEditModal(false)}
           onSave={handleSave}
         />
