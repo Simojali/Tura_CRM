@@ -169,9 +169,9 @@ export default function HotelProfile() {
       const bookingIds = [...new Set(matches.map((m) => m.booking_id))]
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('id, client_name, booking_reference, booking_status, check_in, check_out, number_of_guests, single_rooms, double_rooms, triple_rooms')
+        .select('id, client_name, booking_reference, booking_status, check_in, check_out, number_of_guests, single_rooms, double_rooms, triple_rooms, created_at')
         .in('id', bookingIds)
-        .order('check_in', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (!bookings) { setHistoryLoading(false); return }
 
@@ -180,7 +180,7 @@ export default function HotelProfile() {
         booking: bookings.find((b) => b.id === m.booking_id),
         hotelEntry: m.hotelEntry,
       })).filter((h) => h.booking)
-        .sort((a, b) => new Date(b.booking.check_in) - new Date(a.booking.check_in))
+        .sort((a, b) => new Date(b.booking.created_at) - new Date(a.booking.created_at))
 
       setBookingHistory(history)
       setHistoryLoading(false)

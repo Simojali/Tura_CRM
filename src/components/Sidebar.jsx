@@ -111,8 +111,8 @@ export default function Sidebar() {
         </button>
 
         <button
-          className={`sidebar-item ${isRefTab('transfer') ? 'active' : ''}`}
-          onClick={() => navigate('/reference-data?tab=transfer')}
+          className={`sidebar-item ${path === '/transfers' || path.startsWith('/transfers/') ? 'active' : ''}`}
+          onClick={() => navigate('/transfers')}
         >
           <IconTransfer />
           Transfers
@@ -120,8 +120,8 @@ export default function Sidebar() {
         </button>
 
         <button
-          className={`sidebar-item ${isRefTab('activity') ? 'active' : ''}`}
-          onClick={() => navigate('/reference-data?tab=activity')}
+          className={`sidebar-item ${path === '/activities' || path.startsWith('/activities/') ? 'active' : ''}`}
+          onClick={() => navigate('/activities')}
         >
           <IconActivity />
           Activities
@@ -129,8 +129,8 @@ export default function Sidebar() {
         </button>
 
         <button
-          className={`sidebar-item ${isRefTab('transport') ? 'active' : ''}`}
-          onClick={() => navigate('/reference-data?tab=transport')}
+          className={`sidebar-item ${path === '/transports' || path.startsWith('/transports/') ? 'active' : ''}`}
+          onClick={() => navigate('/transports')}
         >
           <IconTransport />
           Transport

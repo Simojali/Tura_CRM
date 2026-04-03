@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { getNextRefId, TIERS, loadReferenceData, saveReferenceData, loadCities } from '../lib/referenceData'
 import ReferenceItemModal from '../components/ReferenceItemModal'
@@ -9,17 +9,9 @@ import Toast from '../components/Toast'
 
 const CATEGORY_TABS = [
   { key: 'all', label: 'All' },
-  { key: 'transfer', label: 'Transfers' },
-  { key: 'activity', label: 'Activities' },
-  { key: 'transport', label: 'Transport' },
 ]
 
-const CATEGORY_LABELS = {
-  hotel: 'Hotel',
-  transfer: 'Transfer',
-  activity: 'Activity',
-  transport: 'Transport',
-}
+const CATEGORY_LABELS = {}
 
 /* ── Column config per tab ─────────────────────────────────── */
 const col = {
@@ -36,14 +28,15 @@ const col = {
 }
 
 const COLUMN_CONFIG = {
-  all:      [col.name(),           col.category, col.subcategory(), col.city, col.price(),                         col.notes],
-  transfer: [col.name('Route'),    col.subcategory('Type'), col.city, col.capacity(), col.price(),         col.notes],
-  transport:[col.name('Vehicle / Route'), col.subcategory('Type'), col.capacity('Seats'), col.price(),     col.notes],
-  activity: [col.name(),           col.subcategory('Type'), col.city, col.price(),                                  col.notes],
+  all: [col.name(), col.category, col.subcategory(), col.city, col.price(), col.notes],
 }
+
+const slugify = (name) =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
 export default function ReferenceData() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [loadingItems, setLoadingItems] = useState(true)
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'all')
@@ -61,7 +54,7 @@ export default function ReferenceData() {
   // Load reference data + cities on mount
   useEffect(() => {
     loadReferenceData().then((data) => {
-      setItems(data.filter((i) => i.category !== 'hotel'))
+      setItems(data.filter((i) => i.category !== 'hotel' && i.category !== 'transfer' && i.category !== 'transport' && i.category !== 'activity'))
       setLoadingItems(false)
     })
     loadCities().then((data) => setCities(data))
