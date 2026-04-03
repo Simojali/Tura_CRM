@@ -56,6 +56,10 @@ export const TIERS = [
   { value: 'Luxury', label: 'Luxury (5-star)' },
 ]
 
+export const TIER_STARS = { 'Basic': 1, 'Superior': 2, 'Superior Plus': 3, 'Superior Luxury': 4, 'Luxury': 5 }
+export const tierStars = (tier) => '★'.repeat(TIER_STARS[tier] || 0)
+
+
 let _nextId = 100
 
 export const MOCK_REFERENCE_DATA = [

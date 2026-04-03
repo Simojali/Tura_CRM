@@ -1,17 +1,36 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { getNextRefId, TIERS, loadReferenceData, saveReferenceData, loadCities } from '../lib/referenceData'
+import { getNextRefId, TIERS, tierStars, loadReferenceData, saveReferenceData, loadCities } from '../lib/referenceData'
 import ReferenceItemModal from '../components/ReferenceItemModal'
 import Toast from '../components/Toast'
 
 const slugify = (name) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
+function PinIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  )
+}
+
+function PersonIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+  )
+}
+
 export default function HotelsList() {
   const navigate = useNavigate()
   const [allItems, setAllItems] = useState([])
   const [loadingItems, setLoadingItems] = useState(true)
+  const [bookingCounts, setBookingCounts] = useState({})
   const [search, setSearch] = useState('')
   const [cityFilter, setCityFilter] = useState('')
   const [tierFilter, setTierFilter] = useState('')
@@ -23,6 +42,24 @@ export default function HotelsList() {
   useEffect(() => {
     loadReferenceData().then((data) => { setAllItems(data); setLoadingItems(false) })
     loadCities().then((data) => setCities(data))
+  }, [])
+
+  // Fetch booking counts per hotel name from itinerary_rows
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    supabase.from('itinerary_rows').select('rows').then(({ data }) => {
+      if (!data) return
+      const counts = {}
+      data.forEach((record) => {
+        const hotelEntries = record.rows?.hotels || []
+        hotelEntries.forEach((hotel) => {
+          if (hotel.name) {
+            counts[hotel.name] = (counts[hotel.name] || 0) + 1
+          }
+        })
+      })
+      setBookingCounts(counts)
+    })
   }, [])
 
   const hotels = useMemo(() => allItems.filter((i) => i.category === 'hotel'), [allItems])
@@ -96,16 +133,6 @@ export default function HotelsList() {
     )
   }
 
-  const columns = [
-    { key: 'name', label: 'Name', render: (item) => <strong>{item.name}</strong> },
-    { key: 'subcategory', label: 'Type' },
-    { key: 'city', label: 'City' },
-    { key: 'tier', label: 'Tier' },
-    { key: 'contact_person', label: 'Contact', render: (item) => item.contact_person || '—' },
-    { key: 'price', label: 'Price (EUR) — S · D · T', render: formatPrice, className: 'ref-price' },
-    { key: 'notes', label: 'Notes', className: 'ref-notes' },
-  ]
-
   return (
     <>
       <div className="page-header">
@@ -148,56 +175,90 @@ export default function HotelsList() {
           </select>
         </div>
 
-        {/* Table */}
-        <div className="table-wrapper">
-          <table className="ref-table">
-            <thead>
-              <tr>
-                {columns.map((c) => <th key={c.key}>{c.label}</th>)}
-                <th style={{ width: '70px' }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loadingItems ? (
-                [1,2,3,4,5,6,7,8].map((n) => (
-                  <tr key={n} style={{ pointerEvents: 'none' }}>
-                    {columns.map((c, i) => (
-                      <td key={i}><div className="skel skel-td" style={{ width: 60 + Math.random() * 40 }} /></td>
-                    ))}
-                    <td></td>
-                  </tr>
-                ))
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length + 1} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>
-                    No hotels match your filters.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((item) => (
-                  <tr key={item.id} onClick={() => navigate(`/hotels/${slugify(item.name)}`)}>
-                    {columns.map((c) => (
-                      <td key={c.key} className={c.className || ''}>
-                        {c.render ? c.render(item) : (item[c.key] || '—')}
-                      </td>
-                    ))}
-                    <td>
-                      <button
-                        className="btn-icon btn-icon-danger"
-                        title="Delete"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(item)
-                        }}
-                      >
-                        &times;
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        {/* Cards */}
+        <div className="hl-list">
+          {loadingItems ? (
+            [1,2,3,4,5,6].map((n) => (
+              <div key={n} className="hl-card hl-card-skel">
+                <div className="hl-card-main">
+                  <div className="skel" style={{ height: 18, width: 160, borderRadius: 4, marginBottom: 6 }} />
+                  <div className="skel" style={{ height: 12, width: 220, borderRadius: 4, marginBottom: 5 }} />
+                  <div className="skel" style={{ height: 11, width: 120, borderRadius: 4 }} />
+                </div>
+                <div className="hl-card-city"><div className="skel" style={{ height: 14, width: 80, borderRadius: 4 }} /></div>
+                <div className="hl-card-prices"><div className="skel" style={{ height: 14, width: 130, borderRadius: 4 }} /></div>
+                <div className="hl-card-contact"><div className="skel" style={{ height: 14, width: 90, borderRadius: 4 }} /></div>
+                <div className="hl-card-count"><div className="skel" style={{ height: 20, width: 70, borderRadius: 999 }} /></div>
+                <div className="hl-card-arrow" />
+              </div>
+            ))
+          ) : filtered.length === 0 ? (
+            <div className="hl-empty">No hotels match your filters.</div>
+          ) : (
+            filtered.map((item) => {
+              const count = bookingCounts[item.name] || 0
+              return (
+                <div
+                  key={item.id}
+                  className="hl-card"
+                  onClick={() => navigate(`/hotels/${slugify(item.name)}`)}
+                >
+                  {/* Name + badges + notes */}
+                  <div className="hl-card-main">
+                    <div className="hl-card-name">
+                    {item.name}
+                    {item.tier && tierStars(item.tier) && (
+                      <span className="hl-card-stars">{tierStars(item.tier)}</span>
+                    )}
+                  </div>
+                    <div className="hl-card-badges">
+                      {item.tier && <span className="ht-tier-badge">{item.tier}</span>}
+                      {item.subcategory && <span className="bc-meta-chip">{item.subcategory}</span>}
+                    </div>
+                  </div>
+
+                  {/* City */}
+                  <div className="hl-card-city">
+                    {item.city
+                      ? <><PinIcon />{item.city}</>
+                      : <span className="hl-card-empty">—</span>}
+                  </div>
+
+                  {/* Prices */}
+                  <div className="hl-card-prices">
+                    {formatPrice(item)}
+                    {item.price_unit && (
+                      <div className="hl-card-price-unit">{item.price_unit}</div>
+                    )}
+                  </div>
+
+                  {/* Contact */}
+                  <div className="hl-card-contact">
+                    {item.contact_person
+                      ? <><PersonIcon />{item.contact_person}</>
+                      : <span className="hl-card-empty">No contact</span>}
+                  </div>
+
+                  {/* Booking count badge */}
+                  <div className="hl-card-count">
+                    {count > 0
+                      ? <span className="hl-booking-badge hl-booking-badge--active">{count} booking{count !== 1 ? 's' : ''}</span>
+                      : <span className="hl-booking-badge">unused</span>}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="hl-card-actions">
+                    <button
+                      className="btn-icon btn-icon-danger"
+                      title="Delete"
+                      onClick={(e) => { e.stopPropagation(); handleDelete(item) }}
+                    >&times;</button>
+                    <span className="hl-card-arrow">›</span>
+                  </div>
+                </div>
+              )
+            })
+          )}
         </div>
 
         <div className="ref-footer">

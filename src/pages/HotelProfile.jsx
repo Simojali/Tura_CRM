@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { loadReferenceData, saveReferenceData, loadCities } from '../lib/referenceData'
+import { loadReferenceData, saveReferenceData, loadCities, tierStars } from '../lib/referenceData'
 import { supabase } from '../lib/supabase'
 import { fmtDate, fmtCost, statusClass } from '../lib/formatters'
 import ReferenceItemModal from '../components/ReferenceItemModal'
@@ -353,7 +353,12 @@ export default function HotelProfile() {
         <div className="booking-card">
           <div className="bc-header">
             <div className="bc-header-left">
-              <div className="bc-name">{hotel.name}</div>
+              <div className="bc-name">
+                {hotel.name}
+                {hotel.tier && tierStars(hotel.tier) && (
+                  <span className="hl-card-stars" style={{ fontSize: '1.15rem' }}>{tierStars(hotel.tier)}</span>
+                )}
+              </div>
               <div className="bc-meta-line">
                 {hotel.city && <span className="bc-meta-chip">{hotel.city}</span>}
                 {hotel.tier && <span className="ht-tier-badge">{hotel.tier}</span>}
