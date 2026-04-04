@@ -40,10 +40,29 @@ export default function TransfersList() {
   const [toast, setToast] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [cities, setCities] = useState([])
+  const [bookingCounts, setBookingCounts] = useState({})
 
   useEffect(() => {
     loadReferenceData().then((data) => { setAllItems(data); setLoadingItems(false) })
     loadCities().then((data) => setCities(data))
+  }, [])
+
+  // Fetch booking counts per transfer name from itinerary_rows
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    supabase.from('itinerary_rows').select('rows').then(({ data }) => {
+      if (!data) return
+      const counts = {}
+      data.forEach((record) => {
+        const days = record.rows?.rows || []
+        days.forEach((day) => {
+          ;(day.transfers || []).forEach((t) => {
+            if (t.name) counts[t.name] = (counts[t.name] || 0) + 1
+          })
+        })
+      })
+      setBookingCounts(counts)
+    })
   }, [])
 
   const transfers = useMemo(() => allItems.filter((i) => i.category === 'transfer'), [allItems])
@@ -141,13 +160,16 @@ export default function TransfersList() {
                 <div className="hl-card-city"><div className="skel" style={{ height: 14, width: 80, borderRadius: 4 }} /></div>
                 <div className="hl-card-prices"><div className="skel" style={{ height: 14, width: 100, borderRadius: 4 }} /></div>
                 <div className="hl-card-contact"><div className="skel" style={{ height: 14, width: 90, borderRadius: 4 }} /></div>
+                <div className="hl-card-count"><div className="skel" style={{ height: 20, width: 70, borderRadius: 999 }} /></div>
                 <div className="hl-card-arrow" />
               </div>
             ))
           ) : filtered.length === 0 ? (
             <div className="hl-empty">No transfers match your filters.</div>
           ) : (
-            filtered.map((item) => (
+            filtered.map((item) => {
+              const count = bookingCounts[item.name] || 0
+              return (
               <div
                 key={item.id}
                 className="hl-card"
@@ -182,6 +204,12 @@ export default function TransfersList() {
                     : <span className="hl-card-empty">No contact</span>}
                 </div>
 
+                <div className="hl-card-count">
+                  {count > 0
+                    ? <span className="hl-booking-badge hl-booking-badge--active">{count} booking{count !== 1 ? 's' : ''}</span>
+                    : <span className="hl-booking-badge">unused</span>}
+                </div>
+
                 <div className="hl-card-actions">
                   <button
                     className="btn-icon btn-icon-danger"
@@ -191,7 +219,8 @@ export default function TransfersList() {
                   <span className="hl-card-arrow">›</span>
                 </div>
               </div>
-            ))
+              )
+            })
           )}
         </div>
 

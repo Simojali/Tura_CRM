@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { loadReferenceData, saveReferenceData, loadCities } from '../lib/referenceData'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { fmtDate, fmtCost } from '../lib/formatters'
 import ReferenceItemModal from '../components/ReferenceItemModal'
 import Toast from '../components/Toast'
 
@@ -11,6 +13,13 @@ const fmtPrice = (v) =>
   v != null
     ? `€${Number(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
     : null
+
+const STATUS_LABELS = {
+  requested: 'Requested',
+  confirmed: 'Confirmed',
+  cancelled: 'Cancelled',
+  draft: 'Draft',
+}
 
 export default function ActivityProfile() {
   const { id } = useParams()
@@ -23,6 +32,8 @@ export default function ActivityProfile() {
   const [editModal, setEditModal] = useState(false)
   const [toast, setToast] = useState(null)
   const [cities, setCities] = useState([])
+  const [bookingHistory, setBookingHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(true)
 
   useEffect(() => {
     loadReferenceData().then((data) => {
@@ -37,6 +48,61 @@ export default function ActivityProfile() {
     })
     loadCities().then((data) => setCities(data))
   }, [id])
+
+  // Fetch booking history once item is loaded
+  useEffect(() => {
+    if (!item || !isSupabaseConfigured) { setHistoryLoading(false); return }
+
+    const fetchHistory = async () => {
+      setHistoryLoading(true)
+      const { data: itinRows } = await supabase
+        .from('itinerary_rows')
+        .select('booking_id, rows')
+
+      if (!itinRows) { setHistoryLoading(false); return }
+
+      // Activities are stored in day-level arrays: rows.rows[dayIdx].activities[]
+      const matches = []
+      itinRows.forEach((rec) => {
+        const days = rec.rows?.rows || []
+        days.forEach((day) => {
+          ;(day.activities || []).forEach((a) => {
+            if (a.name === item.name) {
+              matches.push({ bookingId: rec.booking_id, activityEntry: a, date: day.date })
+            }
+          })
+        })
+      })
+
+      if (matches.length === 0) { setHistoryLoading(false); return }
+
+      const bookingIds = [...new Set(matches.map((m) => m.bookingId))]
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select('id, client_name, booking_reference, number_of_guests, created_at')
+        .in('id', bookingIds)
+
+      if (!bookings) { setHistoryLoading(false); return }
+
+      const bookingMap = Object.fromEntries(bookings.map((b) => [b.id, b]))
+
+      const history = matches
+        .map((m) => ({ booking: bookingMap[m.bookingId], activityEntry: m.activityEntry, date: m.date }))
+        .filter((h) => h.booking)
+        .sort((a, b) => new Date(b.booking.created_at) - new Date(a.booking.created_at))
+
+      setBookingHistory(history)
+      setHistoryLoading(false)
+    }
+
+    fetchHistory()
+  }, [item])
+
+  const stats = useMemo(() => {
+    const totalBookings = bookingHistory.length
+    const totalRevenue = bookingHistory.reduce((sum, { activityEntry }) => sum + (Number(activityEntry.cost) || 0), 0)
+    return { totalBookings, totalRevenue }
+  }, [bookingHistory])
 
   const handleSave = async (data) => {
     const next = items.map((i) => (i.id === item.id ? { ...i, ...data } : i))
@@ -166,6 +232,84 @@ export default function ActivityProfile() {
           </div>
 
         </div>
+
+        {/* Booking History */}
+        <div className="hp-section-title">Booking History</div>
+
+        {!historyLoading && bookingHistory.length > 0 && (
+          <div className="hp-stats-strip">
+            <div className="hp-stat">
+              <div className="hp-stat-value">{stats.totalBookings}</div>
+              <div className="hp-stat-label">Total Bookings</div>
+            </div>
+            <div className="hp-stat-divider" />
+            <div className="hp-stat">
+              <div className="hp-stat-value">{fmtCost(stats.totalRevenue)}</div>
+              <div className="hp-stat-label">Total Revenue</div>
+            </div>
+          </div>
+        )}
+
+        {historyLoading ? (
+          <div className="hp-history-empty">Loading booking history...</div>
+        ) : bookingHistory.length === 0 ? (
+          <div className="hp-history-empty">No bookings yet for this activity.</div>
+        ) : (
+          <div className="hp-history-list">
+            {bookingHistory.map(({ booking, activityEntry: a, date }, idx) => (
+              <div
+                key={`${booking.id}-${idx}`}
+                className={`hp-booking-card hp-bc-status-${a.status || 'draft'}`}
+                onClick={() => navigate(`/bookings/${booking.booking_reference}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && navigate(`/bookings/${booking.booking_reference}`)}
+              >
+                {/* Status */}
+                <div className="hp-bc-col hp-bc-col-status">
+                  <span className={`itin-status-badge status-${a.status || 'draft'}`}>
+                    {STATUS_LABELS[a.status] || 'Draft'}
+                  </span>
+                </div>
+
+                {/* Client name + ref */}
+                <div className="hp-bc-col hp-bc-col-name">
+                  <div className="hp-bc-name">{booking.client_name || 'Unnamed'}</div>
+                  {booking.booking_reference && (
+                    <div className="hp-bc-ref">{booking.booking_reference}</div>
+                  )}
+                </div>
+
+                {/* Date */}
+                <div className="hp-bc-col hp-bc-col-dates">
+                  <div className="hp-bc-dates-val">{fmtDate(date)}</div>
+                  {a.time && <div className="hp-bc-nights-val">{a.time}</div>}
+                </div>
+
+                {/* Guests */}
+                <div className="hp-bc-col hp-bc-col-guests">
+                  {booking.number_of_guests > 0 && (
+                    <div className="hp-bc-info-item">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      <span>{booking.number_of_guests}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cost */}
+                <div className="hp-bc-col hp-bc-col-rate">
+                  <span className="hp-bc-cost-value">{fmtCost(a.cost)}</span>
+                  {a.price_unit && (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>{a.price_unit}</span>
+                  )}
+                </div>
+
+                {/* Empty 6th column (placeholder for consistent grid alignment) */}
+                <div className="hp-bc-col hp-bc-col-total" />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {editModal && (
